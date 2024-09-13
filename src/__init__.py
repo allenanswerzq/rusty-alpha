@@ -1,6 +1,7 @@
 import ell
 import os
 import json
+import re
 
 from azure.identity import DefaultAzureCredential
 from azure.identity import get_bearer_token_provider
@@ -58,7 +59,10 @@ class MockProvider(Provider):
         logger : Optional[Any] = None,  
         tools: Optional[List[LMP]] = None,
     ) -> Tuple[List[Message], Dict[str, Any]]:
-        source_code = json.dumps(call_result.final_call_params['messages'][1].text)
+        source_code = call_result.final_call_params['messages'][1].text
+        matches = re.findall(r'<cpp_code>(.*?)</cpp_code>', source_code, re.DOTALL)
+        assert len(matches) > 0
+        source_code = json.dumps(matches[0])
         metdata = {}
         results = []
         results.append(
