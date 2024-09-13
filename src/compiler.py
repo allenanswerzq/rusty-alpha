@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from src.ir import *
 from src.parser import parse
 from src.printer import print_graph
+from src.config import *
 
 class Data(BaseModel):
     explain: str = Field(description="simple explanation of the code.")
@@ -38,10 +39,10 @@ class Compiler(Visitor):
             unparsed = unparsed[7:]
         if unparsed.endswith("```"):
             unparsed = unparsed[:-3]
-        print(unparsed)
+        log.debug(unparsed)
         unparsed = json.loads(unparsed)
         parsed = Data.model_validate(unparsed)
-        print(parsed)
+        log.debug(parsed)
         if node.code_store is None:
             node.code_store = Store()
         node.code_store.add_version({"data": parsed})

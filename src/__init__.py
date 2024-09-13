@@ -1,8 +1,6 @@
 import ell
 import os
 import json
-import random
-import string
 
 from azure.identity import DefaultAzureCredential
 from azure.identity import get_bearer_token_provider
@@ -60,7 +58,6 @@ class MockProvider(Provider):
         logger : Optional[Any] = None,  
         tools: Optional[List[LMP]] = None,
     ) -> Tuple[List[Message], Dict[str, Any]]:
-        print(call_result)
         source_code = json.dumps(call_result.final_call_params['messages'][1].text)
         metdata = {}
         results = []
