@@ -15,18 +15,18 @@ def _tree_to_graph(ts_root: TsNode) -> Graph:
     g = Graph()
     ra_root = create_node(ts_root)
     g.root = ra_root
-    
+
     # Use a stack for depth-first traversal
     stack = [(ts_root, ra_root)]
-    
+
     while stack:
         ts_node, ra_node = stack.pop()
-        
+
         for child in ts_node.children:
             child_ra_node = create_node(child)
             ra_node.children.append(child_ra_node)
             stack.append((child, child_ra_node))
-    
+
     return g
 
 
@@ -34,7 +34,7 @@ def parse_doc():
     def decorator(func):
         def wrapper(*args, **kwargs):
             docstring = func.__doc__
-            
+
             if docstring is None:
                 raise ValueError("Function has no docstring to parse.")
 

@@ -1,5 +1,6 @@
 import unittest
 from src.parser import parse_doc
+from src.printer import print_graph
 
 class TestParser(unittest.TestCase):
 
@@ -10,7 +11,7 @@ class TestParser(unittest.TestCase):
             std::cout << "hello alpha" << endl;
         }
         """
-        print(g.root.ts_node)
+        print_graph(g)
 
 
 
