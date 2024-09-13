@@ -1,4 +1,5 @@
 import unittest
+
 from src.parser import parse_doc
 from src.printer import print_graph
 

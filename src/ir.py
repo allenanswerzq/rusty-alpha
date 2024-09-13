@@ -19,6 +19,10 @@ class Node(BaseModel):
     def type(self) -> str:
         return self.ts_node.type
 
+    @property
+    def text(self) -> str:
+        return self.ts_node.text
+
 class Visitor(ABC):
     @abstractmethod
     def visit(self, node: Node) -> Any:
