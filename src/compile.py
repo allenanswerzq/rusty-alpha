@@ -1,8 +1,13 @@
 import ell
 
+from pydantic import BaseModel, Field
+
 from src.ir import *
 from src.parser import parse
 
+class Data(BaseModel):
+    explain: str = Field(default=None, description="simple explanation of the code.")
+    code: str = Field(default=None, description="rust code.")
 
 class Compiler(Visitor):
 
@@ -11,14 +16,28 @@ class Compiler(Visitor):
 
     @ell.simple(model="gpt-4-turbo")
     def compile(self, code: str):
+        return [
+            ell.system(f"""You are a distinguished software developer, give you some c++ code, you will convert it to rust code.
+
+            You must absolutely respond in this format with no exceptions.
+            {Data.model_json_schema()}
+            """),
+
+            ell.user(f"<cpp_code>\n {code} </cpp_code>"),
+        ]
+
+
+    @ell.simple(model="gpt-4-turbo")
+    def compile_as_str(self, code: str):
         """
         You are a distinguished software developer, give you some c++ code,
         you will convert it to rust code.
         """
-        return f"<cpp_code>\n {code} \n</cpp_code>"
+        return f"<cpp_code>\n {code} </cpp_code>"
+
 
     def visit(self, node: Node) -> Any:
-        return self.compile(node.text)
+        return self.compile_as_str(node.text)
 
 
 def compile_graph(g: Graph) -> str:
