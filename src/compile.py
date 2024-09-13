@@ -3,22 +3,22 @@ import ell
 from src.ir import *
 from src.parser import parse
 
-@ell.simple(model="gpt-4-turbo")
-def compile(code: str):
-    """
-    You are a distinguished software developer, give you some c++ code,
-    you will convert it to rust code.
-    """
-    return f"<cpp_code>\n {code} \n</cpp_code>"
-
 
 class Compiler(Visitor):
 
     def __init__(self):
         pass
 
+    @ell.simple(model="gpt-4-turbo")
+    def compile(self, code: str):
+        """
+        You are a distinguished software developer, give you some c++ code,
+        you will convert it to rust code.
+        """
+        return f"<cpp_code>\n {code} \n</cpp_code>"
+
     def visit(self, node: Node) -> Any:
-        return compile(node.text)
+        return self.compile(node.text)
 
 
 def compile_graph(g: Graph) -> str:
