@@ -1,7 +1,7 @@
 import unittest
 
 from src.parser import parse_doc
-from src.compile import compile_graph
+from src.compiler import compile_graph
 from src.printer import write_graph
 
 class TestCompiler(unittest.TestCase):
