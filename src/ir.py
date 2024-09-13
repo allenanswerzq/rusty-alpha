@@ -28,6 +28,9 @@ class Visitor(ABC):
     def visit(self, node: Node) -> Any:
         pass
 
+class Context:
+    pass
+
 class Graph(BaseModel):
     root: Node = Field(default=None, description="root node for the ir graph")
 
