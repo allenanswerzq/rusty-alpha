@@ -1,5 +1,6 @@
 import ell
 import os
+import json
 import random
 import string
 
@@ -59,18 +60,18 @@ class MockProvider(Provider):
         logger : Optional[Any] = None,  
         tools: Optional[List[LMP]] = None,
     ) -> Tuple[List[Message], Dict[str, Any]]:
+        print(call_result)
+        source_code = json.dumps(call_result.final_call_params['messages'][1].text)
         metdata = {}
         results = []
         results.append(
             Message(
                 role=('user'),
-                content="""
-                {
-                    "explain": "Mock",
-                    "target_code": "Mock",
-                    "source_code": "Mock"
-                }
-                """,
+                content = f"""{{
+                    "explain": "Mock", 
+                    "target_code": "Mock", 
+                    "source_code": {source_code}
+                }}"""
             )
         )
         return results, metdata

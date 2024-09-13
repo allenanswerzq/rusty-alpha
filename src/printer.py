@@ -30,6 +30,8 @@ class Writer(Visitor):
     def visit(self, node: Node) -> Any:
         if node.code_store:
             parsed = node.code_store.get_current_version()["data"]
+            self.file.write('//' + parsed.source_code.replace('\n', '\n//'))
+            self.file.write('\n')
             self.file.write(parsed.target_code)
             self.file.write('\n')
         for child in node.children:

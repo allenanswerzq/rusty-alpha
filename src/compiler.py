@@ -29,11 +29,11 @@ class Compiler(Visitor):
             ```
             """),
 
-            ell.user(f"<cpp_code>\n {code} </cpp_code>"),
+            ell.user(f"<cpp_code>\n {code} \n</cpp_code>"),
         ]
 
     def _compile(self, node: Node):
-        unparsed = self._compile_impl(node.text)
+        unparsed = self._compile_impl(node.text.decode('utf-8'))
         if unparsed.startswith("```json"):
             unparsed = unparsed[7:]
         if unparsed.endswith("```"):
