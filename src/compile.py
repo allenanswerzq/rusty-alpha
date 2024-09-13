@@ -1,13 +1,16 @@
 import ell
+import json
 
 from pydantic import BaseModel, Field
 
 from src.ir import *
 from src.parser import parse
+from src.printer import print_graph
 
 class Data(BaseModel):
-    explain: str = Field(default=None, description="simple explanation of the code.")
-    code: str = Field(default=None, description="rust code.")
+    explain: str = Field(description="simple explanation of the code.")
+    target_code: str = Field(description="target code generated.")
+    source_code: str = Field(description="source code to be converted to target code.")
 
 class Compiler(Visitor):
 
@@ -15,48 +18,50 @@ class Compiler(Visitor):
         pass
 
     @ell.simple(model="gpt-4-turbo")
-    def compile(self, code: str):
+    def _compile_impl(self, code: str):
+        schema = json.dumps(Data.model_json_schema(), indent=4)
         return [
             ell.system(f"""You are a distinguished software developer, give you some c++ code, you will convert it to rust code.
 
-            You must absolutely respond in this format with no exceptions.
-            {Data.model_json_schema()}
+            **ONLY OUTPUT JSON OBJECT THAT FOLLOWS THIS JSON SCHEMA**
+            ```json
+            {schema}
+            ```
             """),
 
             ell.user(f"<cpp_code>\n {code} </cpp_code>"),
         ]
 
-
-    @ell.simple(model="gpt-4-turbo")
-    def compile_as_str(self, code: str):
-        """
-        You are a distinguished software developer, give you some c++ code,
-        you will convert it to rust code.
-        """
-        return f"<cpp_code>\n {code} </cpp_code>"
-
+    def _compile(self, node: Node):
+        unparsed = self._compile_impl(node.text)
+        if unparsed.startswith("```json"):
+            unparsed = unparsed[7:]
+        if unparsed.endswith("```"):
+            unparsed = unparsed[:-3]
+        print(unparsed)
+        unparsed = json.loads(unparsed)
+        parsed = Data.model_validate(unparsed)
+        print(parsed)
+        if node.code_store is None:
+            node.code_store = Store()
+        node.code_store.add_version({"data": parsed})
 
     def visit(self, node: Node) -> Any:
-        return self.compile_as_str(node.text)
+        for child in node.children:
+            if hasattr(self, f"visit_{child.type}"):
+                getattr(self, f"visit_{child.type}")(child)
 
 
-def compile_graph(g: Graph) -> str:
+    def visit_declaration(self, node: Node) -> Any:
+        self._compile(node)
+
+    def visit_class_specifier(self, node: Node) -> Any:
+        self._compile(node)
+
+    def visit_function_definition(self, node: Node) -> Any:
+        self._compile(node)
+
+
+def compile_graph(g: Graph) -> Any:
     compiler = Compiler()
     return compiler.visit(g.root)
-
-
-def compile_doc():
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            docstring = func.__doc__
-
-            if docstring is None:
-                raise ValueError("Function has no docstring to compile.")
-
-            cpp_code = bytearray(docstring, "utf8")
-            g = parse(cpp_code)
-            c = compile_graph(g)
-
-            return func(*args, **kwargs, c=c)
-        return wrapper
-    return decorator
