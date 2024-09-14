@@ -34,7 +34,7 @@ class Writer(Visitor):
             store = node.code_store.get_current_version()
             parsed = store["parsed"]
             source_code = store["source_code"]
-            self.file.write('//' + source_code.replace('\n', '\n//'))
+            self.file.write('//|' + source_code.replace('\n', '\n//|'))
             self.file.write('\n')
             self.file.write(parsed.target_code)
             self.file.write('\n')

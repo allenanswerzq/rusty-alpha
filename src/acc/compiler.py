@@ -22,7 +22,9 @@ class Compiler(Visitor):
         schema = json.dumps(Data.model_json_schema(), indent=4)
         code = node.text.decode('utf-8')
         return [
-            ell.system(f"""You are a distinguished software developer, give you some c++ code, you will convert it to rust code.
+            ell.system(f"""
+            You are a distinguished software developer, give you some c++ code, you will convert it to rust code.
+            - Do not add any additional code, only convert the given code to rust.
 
             **ONLY OUTPUT JSON OBJECT THAT FOLLOWS THIS JSON SCHEMA**
             ```json
@@ -35,15 +37,23 @@ class Compiler(Visitor):
 
     def compile(self, node: Node):
         log.info(f"compiling {node.type}")
-        unparsed = self.compile_impl(node)
-        if unparsed.startswith("```json"):
-            unparsed = unparsed[7:]
-        if unparsed.endswith("```"):
-            unparsed = unparsed[:-3]
-        log.debug(unparsed)
-        unparsed = json.loads(unparsed)
-        parsed = Data.model_validate(unparsed)
-        log.debug(parsed)
+        for i in range(3):
+            try:
+                unparsed = self.compile_impl(node)
+                if unparsed.startswith("```json"):
+                    unparsed = unparsed[7:]
+                if unparsed.endswith("```"):
+                    unparsed = unparsed[:-3]
+                log.debug(unparsed)
+                unparsed = json.loads(unparsed)
+                parsed = Data.model_validate(unparsed)
+                log.debug(parsed)
+            except Exception as e:
+                log.error(e)
+                log.info(f"retrying compiling {node.type}")
+                continue
+            finally:
+                break
         if node.code_store is None:
             node.code_store = Store()
         node.code_store.add_version({
