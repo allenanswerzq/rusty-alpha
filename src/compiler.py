@@ -19,8 +19,9 @@ class Compiler(Visitor):
         pass
 
     @ell.simple(model="gpt-4-turbo")
-    def _compile_impl(self, code: str):
+    def compile_impl(self, node: Node):
         schema = json.dumps(Data.model_json_schema(), indent=4)
+        code = node.text.decode('utf-8')
         return [
             ell.system(f"""You are a distinguished software developer, give you some c++ code, you will convert it to rust code.
 
@@ -33,8 +34,8 @@ class Compiler(Visitor):
             ell.user(f"<cpp_code>\n {code} \n</cpp_code>"),
         ]
 
-    def _compile(self, node: Node):
-        unparsed = self._compile_impl(node.text.decode('utf-8'))
+    def compile(self, node: Node):
+        unparsed = self.compile_impl(node)
         if unparsed.startswith("```json"):
             unparsed = unparsed[7:]
         if unparsed.endswith("```"):
@@ -54,13 +55,13 @@ class Compiler(Visitor):
 
 
     def visit_declaration(self, node: Node) -> Any:
-        self._compile(node)
+        self.compile(node)
 
     def visit_class_specifier(self, node: Node) -> Any:
-        self._compile(node)
+        self.compile(node)
 
     def visit_function_definition(self, node: Node) -> Any:
-        self._compile(node)
+        self.compile(node)
 
 
 def compile_graph(g: Graph) -> Any:

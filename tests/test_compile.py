@@ -2,7 +2,7 @@ import unittest
 
 from src.parser import parse_doc
 from src.compiler import compile_graph
-from src.printer import write_graph
+from src.printer import write_graph, print_graph
 
 class TestCompiler(unittest.TestCase):
 
@@ -11,7 +11,9 @@ class TestCompiler(unittest.TestCase):
         """
         const int c = 10;
         class Foo {
+            // define a
             int a;
+            // define b
             int b;
 
             void bar() {
@@ -22,11 +24,12 @@ class TestCompiler(unittest.TestCase):
                 return a + b + 10;
             }
         };
-
+        // comments
         int sum(int a, int b) {
             return a + b;
         }
         """
+        print_graph(g)
         compile_graph(g)
         write_graph(g, "a.rs")
 

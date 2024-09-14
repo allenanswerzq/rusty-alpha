@@ -5,9 +5,16 @@ from tree_sitter import Node as TsNode
 from src.ir import *
 
 
-def parse(cpp_code: bytearray) -> Graph:
+def parse_from_file(file) -> Graph:
+    with open(file, 'r') as f:
+        return parse(f.read())
+
+
+def parse(code: str | bytearray) -> Graph:
+    if isinstance(code, str):
+        code = code.encode('utf-8')
     parser = Parser(Language(tscpp.language()))
-    tree = parser.parse(bytes(cpp_code))
+    tree = parser.parse(bytes(code))
     return _tree_to_graph(tree.root_node)
 
 

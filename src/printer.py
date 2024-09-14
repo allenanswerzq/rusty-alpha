@@ -6,7 +6,8 @@ class Printer(Visitor):
         self.indent = 0
 
     def visit(self, node: Node) -> Any:
-        print("  " * self.indent + node.type)
+        if node.is_named:
+            print(f"{'  ' * self.indent} ({node.type}")
         self.indent += 1
         for child in node.children:
             self.visit(child)

@@ -13,6 +13,7 @@ class Node(BaseModel):
     summary_store: Optional[Store] = Field(default=None, description="multiple version storage for summary of this node.")
     code_store: Optional[Store] = Field(default=None, description="multiple version storage for rust code")
     depends_store: Optional[Store] = Field(default=None, description="the stuff this node depends.")
+    sym_table_store: Optional[Store] = Field(default=None, description="symbol table storage")
     children: Optional[List['Node']] = Field(default=[], description="children node.")
 
     @property
@@ -22,6 +23,19 @@ class Node(BaseModel):
     @property
     def text(self) -> str:
         return self.ts_node.text
+    
+    @property
+    def is_named(self) -> bool:
+        return self.ts_node.is_named
+    
+    @property
+    def start_point(self) -> int:
+        return self.ts_node.start_point
+
+    @property
+    def end_point(self) -> int:
+        return self.ts_node.end_point
+
 
 class Visitor(ABC):
     @abstractmethod
