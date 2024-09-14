@@ -10,16 +10,20 @@ def parse_from_file(file) -> Graph:
         return parse(f.read())
 
 
-def parse(code: str | bytearray) -> Graph:
+def parse(code: str | bytearray, old_tree = None) -> Graph:
     if isinstance(code, str):
         code = code.encode('utf-8')
     parser = Parser(Language(tscpp.language()))
-    tree = parser.parse(bytes(code))
-    return _tree_to_graph(tree.root_node)
+    if old_tree:
+        tree = parser.parse(bytes(code), old_tree)
+    else:
+        tree = parser.parse(bytes(code))
+    return _tree_to_graph(tree)
 
 
-def _tree_to_graph(ts_root: TsNode) -> Graph:
+def _tree_to_graph(tree) -> Graph:
     g = Graph()
+    ts_root = tree.root_node
     ra_root = create_node(ts_root)
     g.root = ra_root
 

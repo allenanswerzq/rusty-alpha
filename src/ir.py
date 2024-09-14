@@ -1,4 +1,5 @@
 from tree_sitter import Node as TsNode
+from tree_sitter import Tree as TsTree
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Dict, Any, Optional, Tuple, Union, Type, List
 from abc import ABC, abstractmethod
@@ -36,6 +37,8 @@ class Node(BaseModel):
     def end_point(self) -> int:
         return self.ts_node.end_point
 
+    def child_by_field_name(self, name: str) -> Any:
+        return self.ts_node.child_by_field_name(name)
 
 class Visitor(ABC):
     @abstractmethod
@@ -46,7 +49,9 @@ class Context:
     pass
 
 class Graph(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     root: Node = Field(default=None, description="root node for the ir graph")
+    tree: TsTree = Field(default=None, description="ts tree")
 
     def __str__(self):
         return str(self.root.ts_node).replace('(', '\n(')

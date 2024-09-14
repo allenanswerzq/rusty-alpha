@@ -7,7 +7,8 @@ class Printer(Visitor):
 
     def visit(self, node: Node) -> Any:
         if node.is_named:
-            print(f"{'  ' * self.indent} ({node.type}")
+            text = node.text.decode('utf-8').replace('\n', '\\n')
+            print(f"{'  ' * self.indent} ({node.type}: {text}")
         self.indent += 1
         for child in node.children:
             self.visit(child)

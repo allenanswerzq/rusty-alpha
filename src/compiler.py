@@ -66,4 +66,4 @@ class Compiler(Visitor):
 
 def compile_graph(g: Graph) -> Any:
     compiler = Compiler()
-    return compiler.visit(g.root)
+    return g.accept(compiler)
