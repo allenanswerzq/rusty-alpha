@@ -1,8 +1,8 @@
 import unittest
 
-from src.parser import parse_doc
-from src.compiler import compile_graph
-from src.printer import write_graph, print_graph
+from acc.parser import parse_doc
+from acc.compiler import compile_graph
+from acc.printer import write_graph, print_graph
 
 class TestCompiler(unittest.TestCase):
 

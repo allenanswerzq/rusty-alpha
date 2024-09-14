@@ -3,10 +3,10 @@ import json
 
 from pydantic import BaseModel, Field
 
-from src.ir import *
-from src.parser import parse
-from src.printer import print_graph
-from src.config import *
+from acc.ir import *
+from acc.parser import parse
+from acc.printer import print_graph
+from acc.config import *
 
 class Data(BaseModel):
     explain: str = Field(description="simple explanation of the code.")
@@ -34,6 +34,7 @@ class Compiler(Visitor):
         ]
 
     def compile(self, node: Node):
+        log.info(f"compiling {node.type}")
         unparsed = self.compile_impl(node)
         if unparsed.startswith("```json"):
             unparsed = unparsed[7:]
@@ -57,7 +58,7 @@ class Compiler(Visitor):
 
     def visit_preproc_ifdef(self, node: Node) -> Any:
         self.visit(node)
-    
+
     def visit_struct_specifier(self, node: Node) -> Any:
         self.compile(node)
 

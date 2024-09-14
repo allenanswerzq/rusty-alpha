@@ -1,4 +1,4 @@
-from src.ir import *
+from acc.ir import *
 
 
 class Printer(Visitor):

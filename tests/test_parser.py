@@ -1,7 +1,7 @@
 import unittest
 
-from src.parser import parse_doc
-from src.printer import print_graph
+from acc.parser import parse_doc
+from acc.printer import print_graph
 
 class TestParser(unittest.TestCase):
 

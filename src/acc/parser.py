@@ -2,7 +2,7 @@ import tree_sitter_cpp as tscpp
 
 from tree_sitter import Language, Parser
 from tree_sitter import Node as TsNode
-from src.ir import *
+from acc.ir import *
 
 
 def parse_from_file(file) -> Graph:

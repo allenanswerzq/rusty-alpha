@@ -1,8 +1,8 @@
 import os
 
-from src.ir import *
-from src.parser import parse
-from src.config import *
+from acc.ir import *
+from acc.parser import parse
+from acc.config import *
 
 def search_file(directory, filename) -> str:
     for root, dirs, files in os.walk(directory):
@@ -50,4 +50,3 @@ def include_graph(g: Graph, dir: str) -> Graph:
     i = Includer(dir, g.tree)
     ng = g.accept(i)
     if ng: return ng
-        

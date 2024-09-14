@@ -1,10 +1,10 @@
 import argparse
 
-from src.parser import parse_from_file
-from src.compiler import compile_graph
-from src.printer import write_graph, print_graph
-from src.config import *
-from src.includer import include_graph
+from acc.parser import parse_from_file
+from acc.compiler import compile_graph
+from acc.printer import write_graph, print_graph
+from acc.config import *
+from acc.includer import include_graph
 
 def main():
     parser = argparse.ArgumentParser(description="ai compiler")

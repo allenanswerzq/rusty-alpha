@@ -1,7 +1,7 @@
 import unittest
 import tempfile
 import os
-from src.store import Store
+from acc.store import Store
 
 class TestStore(unittest.TestCase):
 

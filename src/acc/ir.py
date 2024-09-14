@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import Dict, Any, Optional, Tuple, Union, Type, List
 from abc import ABC, abstractmethod
 
-from src.store import Store
+from acc.store import Store
 
 
 class Node(BaseModel):
@@ -24,11 +24,11 @@ class Node(BaseModel):
     @property
     def text(self) -> str:
         return self.ts_node.text
-    
+
     @property
     def is_named(self) -> bool:
         return self.ts_node.is_named
-    
+
     @property
     def start_point(self) -> int:
         return self.ts_node.start_point

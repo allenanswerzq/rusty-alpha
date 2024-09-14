@@ -1,7 +1,5 @@
 import ell
 import os
-import json
-import re
 
 from azure.identity import DefaultAzureCredential
 from azure.identity import get_bearer_token_provider
@@ -53,10 +51,10 @@ class MockProvider(Provider):
 
     @classmethod
     def process_response(
-        cls, 
-        call_result: APICallResult, 
-        _invocation_origin: str,  
-        logger : Optional[Any] = None,  
+        cls,
+        call_result: APICallResult,
+        _invocation_origin: str,
+        logger : Optional[Any] = None,
         tools: Optional[List[LMP]] = None,
     ) -> Tuple[List[Message], Dict[str, Any]]:
         metdata = {}
@@ -65,8 +63,8 @@ class MockProvider(Provider):
             Message(
                 role=('user'),
                 content = f"""{{
-                    "explain": "Mock", 
-                    "target_code": "Mock" 
+                    "explain": "Mock",
+                    "target_code": "Mock"
                 }}"""
             )
         )
@@ -81,11 +79,10 @@ class MockProvider(Provider):
         return MockAzureOpenAIClient
 
 
-default_client = MockAzureOpenAIClient(**_client_params)
-# default_client = AzureOpenAIClient
-ell.config.register_provider(MockProvider)
-ell.config.register_model('gpt-4-turbo', default_client)
-
-# default_client = AzureOpenAIClient
+# default_client = MockAzureOpenAIClient(**_client_params)
+# ell.config.register_provider(MockProvider)
 # ell.config.register_model('gpt-4-turbo', default_client)
+
+default_client = AzureOpenAIClient(**_client_params)
+ell.config.register_model('gpt-4-turbo', default_client)
 # ell.init(store='./logdir')
