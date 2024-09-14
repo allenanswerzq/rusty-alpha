@@ -31,8 +31,10 @@ class Writer(Visitor):
 
     def visit(self, node: Node) -> Any:
         if node.code_store:
-            parsed = node.code_store.get_current_version()["data"]
-            self.file.write('//' + parsed.source_code.replace('\n', '\n//'))
+            store = node.code_store.get_current_version()
+            parsed = store["parsed"]
+            source_code = store["source_code"]
+            self.file.write('//' + source_code.replace('\n', '\n//'))
             self.file.write('\n')
             self.file.write(parsed.target_code)
             self.file.write('\n')

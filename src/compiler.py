@@ -11,7 +11,6 @@ from src.config import *
 class Data(BaseModel):
     explain: str = Field(description="simple explanation of the code.")
     target_code: str = Field(description="target code generated.")
-    source_code: str = Field(description="source code to be converted to target code.")
 
 class Compiler(Visitor):
 
@@ -46,13 +45,21 @@ class Compiler(Visitor):
         log.debug(parsed)
         if node.code_store is None:
             node.code_store = Store()
-        node.code_store.add_version({"data": parsed})
+        node.code_store.add_version({
+            "parsed": parsed,
+            "source_code": node.text.decode('utf-8')
+            })
 
     def visit(self, node: Node) -> Any:
         for child in node.children:
             if hasattr(self, f"visit_{child.type}"):
                 getattr(self, f"visit_{child.type}")(child)
 
+    def visit_preproc_ifdef(self, node: Node) -> Any:
+        self.visit(node)
+    
+    def visit_struct_specifier(self, node: Node) -> Any:
+        self.compile(node)
 
     def visit_declaration(self, node: Node) -> Any:
         self.compile(node)
