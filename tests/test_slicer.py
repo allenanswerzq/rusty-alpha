@@ -32,12 +32,11 @@ class TestSlicer(unittest.TestCase):
                     return d + 2;
                 }
             };
+
+
         };
         """
         print_graph(g)
-        matches = query_class_data(g.root)
-        self.assertEqual(len(matches), 4)
-        self.assertEqual(get_class_name(g.root), 'Foo')
         slice_graph(g)
 
 

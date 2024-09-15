@@ -12,12 +12,21 @@ CPP_LANGUAGE = Language(tscpp.language())
 class Slicer(Visitor):
 
     def __init__(self):
-        pass
+        self.field_declarator = []
+        self.funtion_definition = []
+        self.nested_class_declarator = []
+        self.nested_class_global = []
 
     def visit(self, node: Node) -> Any:
         for child in node.children:
             if hasattr(self, f"visit_{child.type}"):
                 getattr(self, f"visit_{child.type}")(child)
+
+            if child.type == "class_specifier": 
+                n = len(self.nested_class_declarator)
+                self.nested_class_global.extend(self.nested_class_declarator)
+                for nest in self.nested_class_global[-n:]:
+                    self.visit_class_specifier(nest)
 
     def visit_preproc_ifdef(self, node: Node) -> Any:
         self.visit(node)
@@ -25,20 +34,41 @@ class Slicer(Visitor):
     def visit_struct_specifier(self, node: Node) -> Any:
         pass
 
-    def visit_declaration(self, node: Node) -> Any:
-        pass
+    def visit_field_declaration_list(self, node: Node) -> Any:
+        for child in node.children:
+            self.visit(child)
+    
+    def visit_function_definition(self, node: Node) -> Any:
+        self.funtion_definition.append(node)
+
+    def visit_field_declaration(self, node: Node) -> Any:
+        if is_field_func_declarator(node):
+            # NOTE: we dont need function decl because it will have a impl function in the cpp file
+            pass
+        elif is_field_class_declarator(node):
+            assert node.children[0].type == "class_specifier"
+            self.nested_class_declarator.append(node.children[0])
+            self.nested_class_global.append(node.children[0])
+        else:
+            self.field_declarator.append(node.ts_node)
 
     def visit_class_specifier(self, node: Node) -> Any:
-        data = collect_class_data(node)
-        func = collect_class_func(node)
+        self.field_declarator = []
+        self.funtion_definition = []
+        self.nested_class_declarator = []
+
+        for child in node.children:
+            self.visit(child)
+
+        class_name = get_class_name(node)
+        data = collect_class_data(class_name, self.field_declarator)
+        func = collect_class_func(class_name, self.funtion_definition)
         log.debug(data)
         log.debug(func)
         if node.depends_store is None:
             node.depends_store = Store()
         node.depends_store.add_version({"data": data, "func": func})
 
-    def visit_function_definition(self, node: Node) -> Any:
-        pass
 
 def slice_graph(g: Graph) -> Any:
     compiler = Slicer()
@@ -91,9 +121,7 @@ def is_field_class_declarator(node: TsNode | Node):
     return len(capture) > 0
 
 
-def collect_class_data(node: Node) -> str:
-    class_name = get_class_name(node)
-    fields = query_class_data(node)
+def collect_class_data(class_name, fields) -> str:
     fields_text = '\n'.join('    ' + field.text.decode('utf-8')
                             for field in fields)
     return f"""
@@ -102,9 +130,7 @@ class {class_name} {{
 }};
     """
 
-def collect_class_func(node: Node) -> Dict[str, str]:
-    class_name = get_class_name(node)
-    funcs = query_class_func(node)
+def collect_class_func(class_name, funcs) -> Dict[str, str]:
     func_text = {}
     for f in funcs:
         type = f.child_by_field_name('type').text.decode('utf-8')
@@ -122,51 +148,3 @@ def collect_class_func(node: Node) -> Dict[str, str]:
                 func_text[override] = text
                 break
     return func_text
-
-
-def query_class_func(node: Node) -> Any:
-    query = CPP_LANGUAGE.query("""
-    (
-    (function_definition
-    (_)
-    (function_declarator)
-    ) @function_definition
-    )
-    """)
-
-    defs = []
-    for child in node.children:
-        if not is_field_class_declarator(child):
-            print(child.ts_node.type)
-            capts = query.captures(child.ts_node)
-            if 'function_definition' in capts:
-                defs.extend(capts['function_definition'])
-
-    return defs
-
-
-def query_class_data(node: Node) -> Any:
-    query = CPP_LANGUAGE.query("""
-    (
-    (comment)+ @comments
-    (field_declaration 
-        (primitive_type) 
-    ) @field_declaration
-    )
-    (
-    (comment)+ @comments
-    (field_declaration 
-        (type_identifier) 
-    ) @field_declaration
-    )
-    """)
-
-    decls = query.captures(node.ts_node)
-    if len(decls) > 0:
-        decls = decls['field_declaration']
-
-    fields = [decl for decl in decls if not is_field_func_declarator(decl)]
-
-    # TODO: sort, add comment into Node related to it
-    # TODO: add private and public for every field
-    return fields
