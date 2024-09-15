@@ -4,8 +4,6 @@ import json
 from pydantic import BaseModel, Field
 
 from acc.ir import *
-from acc.parser import parse
-from acc.printer import print_graph
 from acc.config import *
 
 class Data(BaseModel):
