@@ -14,17 +14,27 @@ class TestSlicer(unittest.TestCase):
             // define a
             int *a;
             Bar b;
-            void bar();
+            int c;
             void * f = int(a, b);
+
+            // function declarator
+            void bar();
+
+            int sum() {
+                return c + 2;
+            }
         };
         """
         print_graph(g)
         matches = query_class_data(g.root)
-        self.assertEqual(len(matches), 3)
+        self.assertEqual(len(matches), 4)
         self.assertEqual(get_class_name(g.root), 'Foo')
-        print(collect_class_data_text(g.root))
+        data = collect_class_data(g.root)
+        func = collect_class_data(g.root, is_func=True)
+        print(data)
+        print(func)
+
 
 
 if __name__ == '__main__':
     unittest.main()
-    

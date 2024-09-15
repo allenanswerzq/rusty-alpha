@@ -3,13 +3,14 @@ import threading
 
 # ANSI escape sequences for colors
 COLORS = {
-    'DEBUG': '\033[90m',    # Gray
-    'INFO': '\033[97m',     # White
+    'DEBUG': '\033[90m',  # Gray
+    'INFO': '\033[97m',  # White
     'WARNING': '\033[93m',  # Yellow
-    'ERROR': '\033[91m',    # Red
-    'CRITICAL': '\033[95m', # Magenta
-    'RESET': '\033[0m'      # Reset to default color
+    'ERROR': '\033[91m',  # Red
+    'CRITICAL': '\033[95m',  # Magenta
+    'RESET': '\033[0m'  # Reset to default color
 }
+
 
 class ColoredFormatter(logging.Formatter):
     """Custom logging formatter to add colors to different log levels."""
@@ -19,6 +20,7 @@ class ColoredFormatter(logging.Formatter):
         log_color = COLORS.get(record.levelname, COLORS['RESET'])
         message = super().format(record)
         return f"{log_color}{message}{COLORS['RESET']}"
+
 
 def get_colored_logger():
     # Create a logger
@@ -51,6 +53,7 @@ def get_colored_logger():
     logging.StreamHandler.emit = thread_safe_emit
 
     return logger
+
 
 # Example usage
 if __name__ == "__main__":

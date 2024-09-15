@@ -10,12 +10,19 @@ from acc.store import Store
 class Node(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     ts_node: TsNode = Field(default=None, description="tree sitter node.")
-    knowledge_store: Optional[Store] = Field(default=None, description="kb related to this node.")
-    summary_store: Optional[Store] = Field(default=None, description="multiple version storage for summary of this node.")
-    code_store: Optional[Store] = Field(default=None, description="multiple version storage for rust code")
-    depends_store: Optional[Store] = Field(default=None, description="the stuff this node depends.")
-    sym_table_store: Optional[Store] = Field(default=None, description="symbol table storage")
-    children: Optional[List['Node']] = Field(default=[], description="children node.")
+    knowledge_store: Optional[Store] = Field(
+        default=None, description="kb related to this node.")
+    summary_store: Optional[Store] = Field(
+        default=None,
+        description="multiple version storage for summary of this node.")
+    code_store: Optional[Store] = Field(
+        default=None, description="multiple version storage for rust code")
+    depends_store: Optional[Store] = Field(
+        default=None, description="the stuff this node depends.")
+    sym_table_store: Optional[Store] = Field(
+        default=None, description="symbol table storage")
+    children: Optional[List['Node']] = Field(default=[],
+                                             description="children node.")
 
     @property
     def type(self) -> str:
@@ -40,13 +47,17 @@ class Node(BaseModel):
     def child_by_field_name(self, name: str) -> Any:
         return self.ts_node.child_by_field_name(name)
 
+
 class Visitor(ABC):
+
     @abstractmethod
     def visit(self, node: Node) -> Any:
         pass
 
+
 class Context:
     pass
+
 
 class Graph(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -61,7 +72,4 @@ class Graph(BaseModel):
 
 
 def create_node(ts_node: TsNode) -> Node:
-    return Node(
-        ts_node=ts_node,
-    )
-
+    return Node(ts_node=ts_node, )

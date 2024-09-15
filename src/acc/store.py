@@ -2,6 +2,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import Dict, Any
 import json
 
+
 class Store(BaseModel):
     versions: Dict[int, Dict[str, Any]] = Field(default_factory=dict)
     current_version: int = 0
@@ -30,7 +31,10 @@ class Store(BaseModel):
     def save_to_file(self, filename: str):
         """Save the current state to a JSON file."""
         data = {
-            "versions": {int(k): v for k, v in self.versions.items()},
+            "versions": {
+                int(k): v
+                for k, v in self.versions.items()
+            },
             "current_version": self.current_version
         }
         with open(filename, 'w') as f:
@@ -41,7 +45,7 @@ class Store(BaseModel):
         """Load the state from a JSON file and return a new RAStore instance."""
         with open(filename, 'r') as f:
             data = json.load(f)
-        
+
         store = cls()
         store.versions = {int(k): v for k, v in data["versions"].items()}
         store.current_version = int(data["current_version"])

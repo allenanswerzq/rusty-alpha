@@ -6,10 +6,17 @@ from acc.printer import write_graph, print_graph
 from acc.config import *
 from acc.includer import include_graph
 
+
 def main():
     parser = argparse.ArgumentParser(description="ai compiler")
-    parser.add_argument("-c", "--source", metavar="SOURCE", help="Source file to compile")
-    parser.add_argument("-I", "--include-dir", metavar="DIR", help="Include directory")
+    parser.add_argument("-c",
+                        "--source",
+                        metavar="SOURCE",
+                        help="Source file to compile")
+    parser.add_argument("-I",
+                        "--include-dir",
+                        metavar="DIR",
+                        help="Include directory")
     parser.add_argument("-o", "--output", metavar="OUTPUT", help="Output file")
 
     args = parser.parse_args()

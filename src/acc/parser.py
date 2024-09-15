@@ -10,7 +10,7 @@ def parse_from_file(file) -> Graph:
         return parse(f.read())
 
 
-def parse(code: str | bytearray, old_tree = None) -> Graph:
+def parse(code: str | bytearray, old_tree=None) -> Graph:
     if isinstance(code, str):
         code = code.encode('utf-8')
     parser = Parser(Language(tscpp.language()))
@@ -42,7 +42,9 @@ def _tree_to_graph(tree) -> Graph:
 
 
 def parse_doc():
+
     def decorator(func):
+
         def wrapper(*args, **kwargs):
             docstring = func.__doc__
 
@@ -53,5 +55,7 @@ def parse_doc():
             g = parse(cpp_code)
 
             return func(*args, **kwargs, g=g)
+
         return wrapper
+
     return decorator

@@ -8,6 +8,7 @@ from acc.config import *
 
 CPP_LANGUAGE = Language(tscpp.language())
 
+
 class Slicer(Visitor):
 
     def __init__(self):
@@ -26,23 +27,23 @@ class Slicer(Visitor):
 
     def visit_declaration(self, node: Node) -> Any:
         pass
-    
-    def visit_class_specifier(self, node: Node) -> Any:
-        self.visit(node)
 
+    def visit_class_specifier(self, node: Node) -> Any:
+        data = collect_class_data(node)
+        func = collect_class_data(node)
+        if node.depends_store is None:
+            node.depends_store = Store()
+        node.depends_store.add_version({"data": data, "func": func})
 
     def visit_function_definition(self, node: Node) -> Any:
         pass
 
 
-
 def get_class_name(node: TsNode | Node):
-    query = CPP_LANGUAGE.query(
-        """
+    query = CPP_LANGUAGE.query("""
         (class_specifier
         (type_identifier) @class_name)
-        """
-    )
+        """)
 
     if isinstance(node, Node):
         node = node.ts_node
@@ -53,16 +54,14 @@ def get_class_name(node: TsNode | Node):
 
 
 def is_field_func_declarator(node: TsNode | Node):
-    query = CPP_LANGUAGE.query(
-    """
+    query = CPP_LANGUAGE.query("""
     (
     (field_declaration 
         (_) 
         (function_declarator)
     ) @field_declaration
     )
-    """
-    )
+    """)
 
     if isinstance(node, Node):
         node = node.ts_node
@@ -71,19 +70,45 @@ def is_field_func_declarator(node: TsNode | Node):
     return len(capture) > 0
 
 
-def collect_class_data_text(node: Node) -> str:
+def collect_class_data(node: Node) -> str:
     class_name = get_class_name(node)
     fields = query_class_data(node)
-    fields_text = '\n'.join('    ' + field.text.decode('utf-8') for field in fields)
+    fields_text = '\n'.join('    ' + field.text.decode('utf-8')
+                            for field in fields)
     return f"""
 class {class_name} {{
 {fields_text}
 }};
     """
 
+
+def query_class_func(node: Node) -> Any:
+    query = CPP_LANGUAGE.query("""
+    (
+    (field_declaration 
+        (_) 
+        (function_declarator)
+    ) @field_declaration
+    )
+    (
+    (function_definition
+    (_)
+    (function_declarator)
+    ) @function_definition
+    )
+    """)
+
+    capts = query.captures(node.ts_node)
+    if 'field_declaration' in capts:
+        decls = capts['field_declaration']
+    if 'function_definition' in capts:
+        defs = capts['function_definition']
+
+    return (decls, defs)
+
+
 def query_class_data(node: Node) -> Any:
-    query = CPP_LANGUAGE.query(
-    """
+    query = CPP_LANGUAGE.query("""
     (
     (comment)+ @comments
     (field_declaration 
@@ -96,18 +121,14 @@ def query_class_data(node: Node) -> Any:
         (type_identifier) 
     ) @field_declaration
     )
-    """
-    )
+    """)
 
     decls = query.captures(node.ts_node)
     if len(decls) > 0:
         decls = decls['field_declaration']
 
-    fields = [
-        decl for decl in decls
-        if not is_field_func_declarator(decl)
-    ]
+    fields = [decl for decl in decls if not is_field_func_declarator(decl)]
+
     # TODO: sort, add comment into Node related to it
     # TODO: add private and public for every field
     return fields
-

@@ -6,9 +6,11 @@ from pydantic import BaseModel, Field
 from acc.ir import *
 from acc.config import *
 
+
 class Data(BaseModel):
     explain: str = Field(description="simple explanation of the code.")
     target_code: str = Field(description="target code generated.")
+
 
 class Compiler(Visitor):
 
@@ -29,7 +31,6 @@ class Compiler(Visitor):
             {schema}
             ```
             """),
-
             ell.user(f"<cpp_code>\n {code} \n</cpp_code>"),
         ]
 
@@ -57,7 +58,7 @@ class Compiler(Visitor):
         node.code_store.add_version({
             "parsed": parsed,
             "source_code": node.text.decode('utf-8')
-            })
+        })
 
     def visit(self, node: Node) -> Any:
         for child in node.children:

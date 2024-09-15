@@ -2,6 +2,7 @@ from acc.ir import *
 
 
 class Printer(Visitor):
+
     def __init__(self):
         self.indent = 0
 
@@ -23,6 +24,7 @@ def print_graph(g: Graph):
 
 
 class Writer(Visitor):
+
     def __init__(self, file):
         self.file = open(file, 'w')
 
@@ -41,6 +43,7 @@ class Writer(Visitor):
         for child in node.children:
             self.visit(child)
         return None
+
 
 def write_graph(g: Graph, file: str):
     writer = Writer(file)
