@@ -4,6 +4,7 @@ from tree_sitter import Language, Parser
 from tree_sitter import Node as TsNode
 
 from acc.ir import *
+from acc.parser import parse
 from acc.config import *
 
 CPP_LANGUAGE = Language(tscpp.language())
@@ -63,8 +64,9 @@ class Slicer(Visitor):
         class_name = get_class_name(node)
         data = collect_class_data(class_name, self.field_declarator)
         func = collect_class_func(class_name, self.funtion_definition)
-        log.debug(data)
-        log.debug(func)
+        log.debug(data.text)
+        for k, v in func.items():
+            log.debug(v.text)
         if node.depends_store is None:
             node.depends_store = Store()
         node.depends_store.add_version({"data": data, "func": func})
@@ -121,16 +123,17 @@ def is_field_class_declarator(node: TsNode | Node):
     return len(capture) > 0
 
 
-def collect_class_data(class_name, fields) -> str:
+def collect_class_data(class_name, fields) -> Node:
     fields_text = '\n'.join('    ' + field.text.decode('utf-8')
                             for field in fields)
-    return f"""
+    code = f"""
 class {class_name} {{
 {fields_text}
 }};
     """
+    return parse(code).root
 
-def collect_class_func(class_name, funcs) -> Dict[str, str]:
+def collect_class_func(class_name, funcs) -> Dict[str, Node]:
     func_text = {}
     for f in funcs:
         type = f.child_by_field_name('type').text.decode('utf-8')
@@ -141,10 +144,11 @@ def collect_class_func(class_name, funcs) -> Dict[str, str]:
         text = f"""
         {type} {class_name}::{para} {stmt}
         """
+        node = parse(text).root
         for j in range(0, 100):
             # TOOD: use paramter type to unique the override function
             override = f"{class_name}.{name}.{j}"
             if override not in func_text:
-                func_text[override] = text
+                func_text[override] = node
                 break
     return func_text

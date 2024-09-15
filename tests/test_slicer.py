@@ -33,7 +33,6 @@ class TestSlicer(unittest.TestCase):
                 }
             };
 
-
         };
         """
         print_graph(g)
