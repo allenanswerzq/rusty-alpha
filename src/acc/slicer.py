@@ -30,7 +30,9 @@ class Slicer(Visitor):
 
     def visit_class_specifier(self, node: Node) -> Any:
         data = collect_class_data(node)
-        func = collect_class_data(node)
+        func = collect_class_func(node)
+        log.debug(data)
+        log.debug(func)
         if node.depends_store is None:
             node.depends_store = Store()
         node.depends_store.add_version({"data": data, "func": func})
@@ -38,6 +40,9 @@ class Slicer(Visitor):
     def visit_function_definition(self, node: Node) -> Any:
         pass
 
+def slice_graph(g: Graph) -> Any:
+    compiler = Slicer()
+    return g.accept(compiler)
 
 def get_class_name(node: TsNode | Node):
     query = CPP_LANGUAGE.query("""
@@ -70,6 +75,22 @@ def is_field_func_declarator(node: TsNode | Node):
     return len(capture) > 0
 
 
+def is_field_class_declarator(node: TsNode | Node):
+    query = CPP_LANGUAGE.query("""
+    (
+    (field_declaration 
+        (class_specifier)
+    ) @field_declaration
+    )
+    """)
+
+    if isinstance(node, Node):
+        node = node.ts_node
+
+    capture = query.captures(node)
+    return len(capture) > 0
+
+
 def collect_class_data(node: Node) -> str:
     class_name = get_class_name(node)
     fields = query_class_data(node)
@@ -81,15 +102,30 @@ class {class_name} {{
 }};
     """
 
+def collect_class_func(node: Node) -> Dict[str, str]:
+    class_name = get_class_name(node)
+    funcs = query_class_func(node)
+    func_text = {}
+    for f in funcs:
+        type = f.child_by_field_name('type').text.decode('utf-8')
+        d = f.child_by_field_name('declarator')
+        stmt = f.child_by_field_name('body').text.decode('utf-8')
+        name = d.child_by_field_name('declarator').text.decode('utf-8')
+        para = d.text.decode('utf-8')
+        text = f"""
+        {type} {class_name}::{para} {stmt}
+        """
+        for j in range(0, 100):
+            # TOOD: use paramter type to unique the override function
+            override = f"{class_name}.{name}.{j}"
+            if override not in func_text:
+                func_text[override] = text
+                break
+    return func_text
+
 
 def query_class_func(node: Node) -> Any:
     query = CPP_LANGUAGE.query("""
-    (
-    (field_declaration 
-        (_) 
-        (function_declarator)
-    ) @field_declaration
-    )
     (
     (function_definition
     (_)
@@ -98,13 +134,15 @@ def query_class_func(node: Node) -> Any:
     )
     """)
 
-    capts = query.captures(node.ts_node)
-    if 'field_declaration' in capts:
-        decls = capts['field_declaration']
-    if 'function_definition' in capts:
-        defs = capts['function_definition']
+    defs = []
+    for child in node.children:
+        if not is_field_class_declarator(child):
+            print(child.ts_node.type)
+            capts = query.captures(child.ts_node)
+            if 'function_definition' in capts:
+                defs.extend(capts['function_definition'])
 
-    return (decls, defs)
+    return defs
 
 
 def query_class_data(node: Node) -> Any:
