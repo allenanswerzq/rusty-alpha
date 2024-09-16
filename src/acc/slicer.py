@@ -23,11 +23,19 @@ class Slicer(Visitor):
             if hasattr(self, f"visit_{child.type}"):
                 getattr(self, f"visit_{child.type}")(child)
 
-            if child.type == "class_specifier": 
+            if child.type in ["class_specifier", "struct_specifier"]: 
                 n = len(self.nested_class_declarator)
                 self.nested_class_global.extend(self.nested_class_declarator)
                 for nest in self.nested_class_global[-n:]:
                     self.visit_class_specifier(nest)
+
+    def visit_declaration_list(self, node: Node) -> Any:
+        for child in node.children:
+            self.visit(child)
+
+    def visit_namespace_definition(self, node: Node) -> Any:
+        for child in node.children:
+            self.visit(child)
 
     def visit_preproc_ifdef(self, node: Node) -> Any:
         self.visit(node)

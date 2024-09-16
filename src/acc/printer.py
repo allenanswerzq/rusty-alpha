@@ -9,7 +9,7 @@ class Printer(Visitor):
     def visit(self, node: Node) -> Any:
         if node.is_named:
             text = node.text.decode('utf-8').replace('\n', '\\n')
-            print(f"{'  ' * self.indent} ({node.type}: {text}")
+            print(f"{'  ' * self.indent} ({node.type} {node.name}: {text}")
         self.indent += 1
         for child in node.children:
             self.visit(child)
@@ -35,9 +35,9 @@ class Writer(Visitor):
         store = node.code_store.get_current_version()
         parsed = store["parsed"]
         source_code = store["source_code"]
-        self.file.write('//|' + source_code.replace('\n', '\n//|'))
+        self.file.write('//|' + source_code.text.decode('utf-8').replace('\n', '\n//|'))
         self.file.write('\n')
-        self.file.write(parsed.target_code)
+        self.file.write(parsed.text.decode('utf-8'))
         self.file.write('\n')
 
     def visit(self, node: Node) -> Any:

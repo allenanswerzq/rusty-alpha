@@ -68,7 +68,7 @@ class MockProvider(Provider):
             Message(role=('user'),
                     content=f"""{{
                     "explain": "Mock",
-                    "target_code": "Mock"
+                    "target_code": "fn mock() {{}}"
                 }}"""))
         return results, metdata
 

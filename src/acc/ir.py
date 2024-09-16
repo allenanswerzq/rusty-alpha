@@ -9,6 +9,8 @@ from acc.store import Store
 
 class Node(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
+    name: str = Field(default=None, description="full qualified name of the node.")
+    parent: Optional['Node'] = Field(default=None, description="part of the node.")
     ts_node: TsNode = Field(default=None, description="tree sitter node.")
     knowledge_store: Optional[Store] = Field(
         default=None, description="kb related to this node.")
@@ -77,5 +79,77 @@ class Graph(BaseModel):
         return visitor.visit(self.root)
 
 
-def create_node(ts_node: TsNode) -> Node:
-    return Node(ts_node=ts_node, )
+def create_node(ts_node: TsNode, parent: Node) -> Node:
+    return Node(ts_node=ts_node, parent=parent)
+
+
+# assign name to node
+class Assigner(Visitor):
+
+    def __init__(self):
+        self.name = []
+
+    def visit(self, node: Node) -> Any:
+        for child in node.children:
+            if hasattr(self, f"visit_{child.type}"):
+                # print(f"visiting {child.type}")
+                getattr(self, f"visit_{child.type}")(child)
+    
+    def assign_name(self, node):
+        name = node.text.decode('utf-8').replace("::", '.')
+        if node.type == 'function_declarator':
+            name = name.split('(')[0]
+        node.parent.name = '.'.join(self.name) + '.' + name
+        self.name.append(name)
+        print(self.name)
+
+    def visit_namespace_identifier(self, node: Node) -> Any:
+        self.assign_name(node)
+
+    def visit_function_declarator(self, node: Node) -> Any:
+        self.assign_name(node)
+            
+    def visit_type_identifier(self, node: Node) -> Any:
+        self.assign_name(node)
+
+    def visit_identifier(self, node: Node) -> Any:
+        pass
+
+    def visit_field_identifier(self, node: Node) -> Any:
+        # self.assign_name(node)
+        pass
+
+    def visit_declaration_list(self, node: Node) -> Any:
+        self.visit(node)
+
+    def visit_namespace_definition(self, node: Node) -> Any:
+        self.visit(node)
+        # self.name.pop()
+
+    def visit_preproc_ifdef(self, node: Node) -> Any:
+        self.visit(node)
+
+    def visit_struct_specifier(self, node: Node) -> Any:
+        self.visit_class_specifier(node)
+
+    def visit_field_declaration_list(self, node: Node) -> Any:
+        self.visit(node)
+
+    def visit_enum_specifier(self, node: Node) -> Any:
+        self.visit(node)
+        self.name.pop()
+   
+    def visit_function_definition(self, node: Node) -> Any:
+        self.visit(node)
+        self.name.pop()
+
+    def visit_field_declaration(self, node: Node) -> Any:
+        pass
+
+    def visit_class_specifier(self, node: Node) -> Any:
+        self.visit(node)
+        self.name.pop()
+
+def assign_name_graph(g: Graph):
+    assigner = Assigner()
+    return g.accept(assigner)

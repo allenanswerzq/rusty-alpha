@@ -1,11 +1,13 @@
 import ell
 import json
 
-from pydantic import BaseModel, Field
-
 from acc.ir import *
 from acc.config import *
+from acc.parser import parse
+from pydantic import BaseModel, Field
 
+import tree_sitter_rust as tsrust
+from tree_sitter import Language, Parser
 
 class Data(BaseModel):
     explain: str = Field(description="simple explanation of the code.")
@@ -55,9 +57,10 @@ class Compiler(Visitor):
                 break
         if node.code_store is None:
             node.code_store = Store()
+        parsed = parse(parsed.target_code, lan=Language(tsrust.language()))
         node.code_store.add_version({
-            "parsed": parsed,
-            "source_code": node.text.decode('utf-8')
+            "parsed": parsed.root,
+            "source_code": node
         })
 
     def visit(self, node: Node) -> Any:

@@ -4,40 +4,49 @@ from tree_sitter import Language, Parser
 from tree_sitter import Node as TsNode
 from acc.ir import *
 
+CPP_LANGUAGE = Language(tscpp.language())
+
 
 def parse_from_file(file) -> Graph:
     with open(file, 'r') as f:
         return parse(f.read())
 
 
-def parse(code: str | bytearray, old_tree=None) -> Graph:
+def parse(code: str | bytearray, old_tree=None, lan=None) -> Graph:
     if isinstance(code, str):
         code = code.encode('utf-8')
-    parser = Parser(Language(tscpp.language()))
+
+    if lan is None:
+        parser = Parser(CPP_LANGUAGE)
+    else:
+        parser = Parser(lan)
+
     if old_tree:
         tree = parser.parse(bytes(code), old_tree)
     else:
         tree = parser.parse(bytes(code))
+
     return _tree_to_graph(tree)
 
 
 def _tree_to_graph(tree) -> Graph:
     g = Graph()
     ts_root = tree.root_node
-    ra_root = create_node(ts_root)
-    g.root = ra_root
+    root = create_node(ts_root, Node(name="."))
+    g.root = root
 
     # Use a stack for depth-first traversal
-    stack = [(ts_root, ra_root)]
+    stack = [(ts_root, root)]
 
     while stack:
         ts_node, ra_node = stack.pop()
 
         for child in ts_node.children:
-            child_ra_node = create_node(child)
+            child_ra_node = create_node(child, ra_node)
             ra_node.children.append(child_ra_node)
             stack.append((child, child_ra_node))
 
+    assign_name_graph(g)
     return g
 
 
