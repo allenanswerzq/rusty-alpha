@@ -7,7 +7,7 @@
 
 enum Color {RED, BLACK, DOUBLE_BLACK};
 
-struct Node
+class Node
 {
     int data;
     int color;

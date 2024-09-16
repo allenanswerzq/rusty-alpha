@@ -30,20 +30,35 @@ class Writer(Visitor):
 
     def __del__(self):
         self.file.close()
+    
+    def write(self, node):
+        store = node.code_store.get_current_version()
+        parsed = store["parsed"]
+        source_code = store["source_code"]
+        self.file.write('//|' + source_code.replace('\n', '\n//|'))
+        self.file.write('\n')
+        self.file.write(parsed.target_code)
+        self.file.write('\n')
 
     def visit(self, node: Node) -> Any:
+        if node.type == "class_specifier":
+            assert node.depends_store
+            depend = node.depends_store.get_current_version()
+            data_node = depend["data"]
+            func_nodes = depend["func"]
+            assert data_node or func_nodes
+            if data_node:
+                self.write(data_node)
+            if func_nodes:
+                for f, v in func_nodes:
+                    self.write(v)
+
         if node.code_store:
-            store = node.code_store.get_current_version()
-            parsed = store["parsed"]
-            source_code = store["source_code"]
-            self.file.write('//|' + source_code.replace('\n', '\n//|'))
-            self.file.write('\n')
-            self.file.write(parsed.target_code)
-            self.file.write('\n')
+            self.write(node)
+
         for child in node.children:
             self.visit(child)
         return None
-
 
 def write_graph(g: Graph, file: str):
     writer = Writer(file)

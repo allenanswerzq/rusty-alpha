@@ -5,6 +5,7 @@ from acc.compiler import compile_graph
 from acc.printer import write_graph, print_graph
 from acc.config import *
 from acc.includer import include_graph
+from acc.slicer import slice_graph
 
 
 def main():
@@ -27,6 +28,7 @@ def main():
     if ng: g = ng
     log.debug(g.root.text.decode('utf-8'))
     print_graph(g)
+    slice_graph(g)
     compile_graph(g)
     write_graph(g, args.output)
 

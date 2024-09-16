@@ -51,6 +51,7 @@ class Slicer(Visitor):
             self.nested_class_declarator.append(node.children[0])
             self.nested_class_global.append(node.children[0])
         else:
+            log.debug(node.ts_node.text)
             self.field_declarator.append(node.ts_node)
 
     def visit_class_specifier(self, node: Node) -> Any:
@@ -60,16 +61,19 @@ class Slicer(Visitor):
 
         for child in node.children:
             self.visit(child)
-
+        
         class_name = get_class_name(node)
         data = collect_class_data(class_name, self.field_declarator)
         func = collect_class_func(class_name, self.funtion_definition)
-        log.debug(data.text)
-        for k, v in func.items():
-            log.debug(v.text)
+        if data:
+            log.debug(data.text)
+        if func:
+            for k, v in func.items():
+                log.debug(v.text)
         if node.depends_store is None:
             node.depends_store = Store()
-        node.depends_store.add_version({"data": data, "func": func})
+        if data or func:
+            node.depends_store.add_version({"data": data, "func": func})
 
 
 def slice_graph(g: Graph) -> Any:
@@ -94,8 +98,16 @@ def is_field_func_declarator(node: TsNode | Node):
     query = CPP_LANGUAGE.query("""
     (
     (field_declaration 
-        (_) 
+        (_)
         (function_declarator)
+    ) @field_declaration
+    )
+    (
+    (field_declaration 
+        (_)
+        (pointer_declarator
+            (function_declarator)
+        )
     ) @field_declaration
     )
     """)
@@ -124,6 +136,7 @@ def is_field_class_declarator(node: TsNode | Node):
 
 
 def collect_class_data(class_name, fields) -> Node:
+    if len(fields) == 0: return None
     fields_text = '\n'.join('    ' + field.text.decode('utf-8')
                             for field in fields)
     code = f"""
@@ -134,6 +147,7 @@ class {class_name} {{
     return parse(code).root
 
 def collect_class_func(class_name, funcs) -> Dict[str, Node]:
+    if len(funcs) == 0: return None
     func_text = {}
     for f in funcs:
         type = f.child_by_field_name('type').text.decode('utf-8')
