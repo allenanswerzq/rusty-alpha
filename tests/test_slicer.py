@@ -10,6 +10,7 @@ class TestSlicer(unittest.TestCase):
     @parse_doc()
     def test_query(self, g):
         """
+        enum Color {RED, BLACK, DOUBLE_BLACK};
         class Foo {
             // define a
             int *a;

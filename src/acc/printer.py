@@ -41,7 +41,7 @@ class Writer(Visitor):
         self.file.write('\n')
 
     def visit(self, node: Node) -> Any:
-        if node.type == "class_specifier":
+        if node.type in ["class_specifier", "struct_specifier"]:
             assert node.depends_store
             depend = node.depends_store.get_current_version()
             data_node = depend["data"]

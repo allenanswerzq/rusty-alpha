@@ -67,9 +67,12 @@ class Compiler(Visitor):
 
     def visit_preproc_ifdef(self, node: Node) -> Any:
         self.visit(node)
+    
+    def visit_enum_specifier(self, node: Node) -> Any:
+        self.compile(node)
 
     def visit_struct_specifier(self, node: Node) -> Any:
-        self.compile(node)
+        self.visit_class_specifier(node)
 
     def visit_declaration(self, node: Node) -> Any:
         self.compile(node)

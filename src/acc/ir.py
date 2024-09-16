@@ -44,6 +44,12 @@ class Node(BaseModel):
     def end_point(self) -> int:
         return self.ts_node.end_point
 
+    @property
+    def rows(self) -> int:
+        s = self.start_point
+        e = self.end_point
+        return e.row - s.row
+
     def child_by_field_name(self, name: str) -> Any:
         return self.ts_node.child_by_field_name(name)
 

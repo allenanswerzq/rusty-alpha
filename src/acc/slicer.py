@@ -33,13 +33,15 @@ class Slicer(Visitor):
         self.visit(node)
 
     def visit_struct_specifier(self, node: Node) -> Any:
-        pass
+        self.visit_class_specifier(node)
 
     def visit_field_declaration_list(self, node: Node) -> Any:
         for child in node.children:
             self.visit(child)
     
     def visit_function_definition(self, node: Node) -> Any:
+        # log.debug(node.text)
+        log.debug(node.rows)
         self.funtion_definition.append(node)
 
     def visit_field_declaration(self, node: Node) -> Any:
@@ -51,7 +53,6 @@ class Slicer(Visitor):
             self.nested_class_declarator.append(node.children[0])
             self.nested_class_global.append(node.children[0])
         else:
-            log.debug(node.ts_node.text)
             self.field_declarator.append(node.ts_node)
 
     def visit_class_specifier(self, node: Node) -> Any:
@@ -82,8 +83,14 @@ def slice_graph(g: Graph) -> Any:
 
 def get_class_name(node: TsNode | Node):
     query = CPP_LANGUAGE.query("""
+        (
         (class_specifier
         (type_identifier) @class_name)
+        )
+        (
+        (struct_specifier
+        (type_identifier) @class_name)
+        )
         """)
 
     if isinstance(node, Node):
