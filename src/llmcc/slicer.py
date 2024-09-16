@@ -23,7 +23,7 @@ class Slicer(Visitor):
             if hasattr(self, f"visit_{child.type}"):
                 getattr(self, f"visit_{child.type}")(child)
 
-            if child.type in ["class_specifier", "struct_specifier"]: 
+            if child.type in ["class_specifier", "struct_specifier"]:
                 n = len(self.nested_class_declarator)
                 self.nested_class_global.extend(self.nested_class_declarator)
                 for nest in self.nested_class_global[-n:]:
@@ -46,7 +46,7 @@ class Slicer(Visitor):
     def visit_field_declaration_list(self, node: Node) -> Any:
         for child in node.children:
             self.visit(child)
-    
+
     def visit_function_definition(self, node: Node) -> Any:
         # log.debug(node.text)
         log.debug(node.rows)
@@ -59,9 +59,9 @@ class Slicer(Visitor):
         elif is_field_class_declarator(node):
             assert node.children[0].type == "class_specifier"
             nest = node.children[0]
-            parts = nest.name.split('.')
+            parts = nest.name.split(".")
             parts.pop(-2)
-            nest.name = '.'.join(parts)
+            nest.name = ".".join(parts)
             self.nested_class_declarator.append(nest)
         else:
             self.field_declarator.append(node.ts_node)
@@ -73,7 +73,7 @@ class Slicer(Visitor):
 
         for child in node.children:
             self.visit(child)
-        
+
         class_name = node.name
         data = collect_class_data(class_name, self.field_declarator)
         func = collect_class_func(class_name, self.funtion_definition)
@@ -92,8 +92,10 @@ def slice_graph(g: Graph) -> Any:
     compiler = Slicer()
     return g.accept(compiler)
 
+
 def get_class_name(node: TsNode | Node):
-    query = CPP_LANGUAGE.query("""
+    query = CPP_LANGUAGE.query(
+        """
         (
         (class_specifier
         (type_identifier) @class_name)
@@ -102,18 +104,20 @@ def get_class_name(node: TsNode | Node):
         (struct_specifier
         (type_identifier) @class_name)
         )
-        """)
+        """
+    )
 
     if isinstance(node, Node):
         node = node.ts_node
 
     captures = query.captures(node)
-    assert 'class_name' in captures
-    return captures['class_name'][0].text.decode('utf-8')
+    assert "class_name" in captures
+    return captures["class_name"][0].text.decode("utf-8")
 
 
 def is_field_func_declarator(node: TsNode | Node):
-    query = CPP_LANGUAGE.query("""
+    query = CPP_LANGUAGE.query(
+        """
     (
     (field_declaration 
         (_)
@@ -128,7 +132,8 @@ def is_field_func_declarator(node: TsNode | Node):
         )
     ) @field_declaration
     )
-    """)
+    """
+    )
 
     if isinstance(node, Node):
         node = node.ts_node
@@ -138,13 +143,15 @@ def is_field_func_declarator(node: TsNode | Node):
 
 
 def is_field_class_declarator(node: TsNode | Node):
-    query = CPP_LANGUAGE.query("""
+    query = CPP_LANGUAGE.query(
+        """
     (
     (field_declaration 
         (class_specifier)
     ) @field_declaration
     )
-    """)
+    """
+    )
 
     if isinstance(node, Node):
         node = node.ts_node
@@ -154,10 +161,10 @@ def is_field_class_declarator(node: TsNode | Node):
 
 
 def collect_class_data(class_name, fields) -> Node:
-    if len(fields) == 0: return None
-    fields_text = '\n'.join('    ' + field.text.decode('utf-8')
-                            for field in fields)
-    parts = class_name.split('.')
+    if len(fields) == 0:
+        return None
+    fields_text = "\n".join("    " + field.text.decode("utf-8") for field in fields)
+    parts = class_name.split(".")
     assert len(parts) in [1, 2]
     if len(parts) == 1:
         code = f"""
@@ -175,15 +182,17 @@ namespce {parts[0]} {{
     """
     return parse(code).root
 
+
 def collect_class_func(class_name, funcs) -> Dict[str, Node]:
-    if len(funcs) == 0: return None
+    if len(funcs) == 0:
+        return None
     func_text = {}
     for f in funcs:
-        type = f.child_by_field_name('type').text.decode('utf-8')
-        d = f.child_by_field_name('declarator')
-        stmt = f.child_by_field_name('body').text.decode('utf-8')
-        name = d.child_by_field_name('declarator').text.decode('utf-8')
-        para = d.text.decode('utf-8')
+        type = f.child_by_field_name("type").text.decode("utf-8")
+        d = f.child_by_field_name("declarator")
+        stmt = f.child_by_field_name("body").text.decode("utf-8")
+        name = d.child_by_field_name("declarator").text.decode("utf-8")
+        para = d.text.decode("utf-8")
         text = f"""
         {type} {class_name.replace('.', '::')}::{para} {stmt}
         """

@@ -13,7 +13,8 @@ from ell.types.message import LMP
 from ell.util.serialization import serialize_image
 
 token_provider = get_bearer_token_provider(
-    DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")
+    DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default"
+)
 
 _client_params: Dict[str, Any] = {}
 _client_params["azure_endpoint"] = os.getenv("AZURE_OPENAI_ENDPOINT")
@@ -65,11 +66,14 @@ class MockProvider(Provider):
         metdata = {}
         results = []
         results.append(
-            Message(role=('user'),
-                    content=f"""{{
+            Message(
+                role=("user"),
+                content=f"""{{
                     "explain": "Mock",
                     "target_code": "fn mock() {{}}"
-                }}"""))
+                }}""",
+            )
+        )
         return results, metdata
 
     @classmethod
@@ -83,7 +87,7 @@ class MockProvider(Provider):
 
 default_client = MockAzureOpenAIClient(**_client_params)
 ell.config.register_provider(MockProvider)
-ell.config.register_model('gpt-4-turbo', default_client)
+ell.config.register_model("gpt-4-turbo", default_client)
 
 # default_client = AzureOpenAIClient(**_client_params)
 # ell.config.register_model('gpt-4-turbo', default_client)

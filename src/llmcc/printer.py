@@ -8,7 +8,7 @@ class Printer(Visitor):
 
     def visit(self, node: Node) -> Any:
         if node.is_named:
-            text = node.text.decode('utf-8').replace('\n', '\\n')
+            text = node.text.decode("utf-8").replace("\n", "\\n")
             print(f"{'  ' * self.indent} ({node.type} {node.name}: {text}")
         self.indent += 1
         for child in node.children:
@@ -18,7 +18,7 @@ class Printer(Visitor):
 
 
 def print_graph(g: Graph):
-    print('\n')
+    print("\n")
     printer = Printer()
     printer.visit(g.root)
 
@@ -26,19 +26,19 @@ def print_graph(g: Graph):
 class Writer(Visitor):
 
     def __init__(self, file):
-        self.file = open(file, 'w')
+        self.file = open(file, "w")
 
     def __del__(self):
         self.file.close()
-    
+
     def write(self, node):
         store = node.code_store.get_current_version()
         parsed = store["parsed"]
         source_code = store["source_code"]
-        self.file.write('//|' + source_code.text.decode('utf-8').replace('\n', '\n//|'))
-        self.file.write('\n')
-        self.file.write(parsed.text.decode('utf-8'))
-        self.file.write('\n')
+        self.file.write("//|" + source_code.text.decode("utf-8").replace("\n", "\n//|"))
+        self.file.write("\n")
+        self.file.write(parsed.text.decode("utf-8"))
+        self.file.write("\n")
 
     def visit(self, node: Node) -> Any:
         if node.type in ["class_specifier", "struct_specifier"]:
@@ -59,6 +59,7 @@ class Writer(Visitor):
         for child in node.children:
             self.visit(child)
         return None
+
 
 def write_graph(g: Graph, file: str):
     writer = Writer(file)

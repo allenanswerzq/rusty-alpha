@@ -8,13 +8,13 @@ CPP_LANGUAGE = Language(tscpp.language())
 
 
 def parse_from_file(file) -> Graph:
-    with open(file, 'r') as f:
+    with open(file, "r") as f:
         return parse(f.read())
 
 
 def parse(code: str | bytearray, old_tree=None, lan=None) -> Graph:
     if isinstance(code, str):
-        code = code.encode('utf-8')
+        code = code.encode("utf-8")
 
     if lan is None:
         parser = Parser(CPP_LANGUAGE)

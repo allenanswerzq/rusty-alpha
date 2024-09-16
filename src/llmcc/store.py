@@ -31,19 +31,16 @@ class Store(BaseModel):
     def save_to_file(self, filename: str):
         """Save the current state to a JSON file."""
         data = {
-            "versions": {
-                int(k): v
-                for k, v in self.versions.items()
-            },
-            "current_version": self.current_version
+            "versions": {int(k): v for k, v in self.versions.items()},
+            "current_version": self.current_version,
         }
-        with open(filename, 'w') as f:
+        with open(filename, "w") as f:
             json.dump(data, f, indent=2)
 
     @classmethod
-    def load_from_file(cls, filename: str) -> 'Store':
+    def load_from_file(cls, filename: str) -> "Store":
         """Load the state from a JSON file and return a new RAStore instance."""
-        with open(filename, 'r') as f:
+        with open(filename, "r") as f:
             data = json.load(f)
 
         store = cls()

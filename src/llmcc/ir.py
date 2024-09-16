@@ -10,21 +10,24 @@ from llmcc.store import Store
 class Node(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     name: str = Field(default=None, description="full qualified name of the node.")
-    parent: Optional['Node'] = Field(default=None, description="part of the node.")
+    parent: Optional["Node"] = Field(default=None, description="part of the node.")
     ts_node: TsNode = Field(default=None, description="tree sitter node.")
     knowledge_store: Optional[Store] = Field(
-        default=None, description="kb related to this node.")
+        default=None, description="kb related to this node."
+    )
     summary_store: Optional[Store] = Field(
-        default=None,
-        description="multiple version storage for summary of this node.")
+        default=None, description="multiple version storage for summary of this node."
+    )
     code_store: Optional[Store] = Field(
-        default=None, description="multiple version storage for rust code")
+        default=None, description="multiple version storage for rust code"
+    )
     depends_store: Optional[Store] = Field(
-        default=None, description="the stuff this node depends.")
+        default=None, description="the stuff this node depends."
+    )
     sym_table_store: Optional[Store] = Field(
-        default=None, description="symbol table storage")
-    children: Optional[List['Node']] = Field(default=[],
-                                             description="children node.")
+        default=None, description="symbol table storage"
+    )
+    children: Optional[List["Node"]] = Field(default=[], description="children node.")
 
     @property
     def type(self) -> str:
@@ -73,9 +76,9 @@ class Graph(BaseModel):
     tree: TsTree = Field(default=None, description="ts tree")
 
     def __str__(self):
-        return str(self.root.ts_node).replace('(', '\n(')
+        return str(self.root.ts_node).replace("(", "\n(")
 
-    def accept(self, visitor: 'Visitor') -> Any:
+    def accept(self, visitor: "Visitor") -> Any:
         return visitor.visit(self.root)
 
 
@@ -94,12 +97,12 @@ class Assigner(Visitor):
             if hasattr(self, f"visit_{child.type}"):
                 # print(f"visiting {child.type}")
                 getattr(self, f"visit_{child.type}")(child)
-    
+
     def assign_name(self, node):
-        name = node.text.decode('utf-8').replace("::", '.')
-        if node.type == 'function_declarator':
-            name = name.split('(')[0]
-        node.parent.name = '.'.join(self.name) + '.' + name
+        name = node.text.decode("utf-8").replace("::", ".")
+        if node.type == "function_declarator":
+            name = name.split("(")[0]
+        node.parent.name = ".".join(self.name) + "." + name
         self.name.append(name)
         print(self.name)
 
@@ -108,7 +111,7 @@ class Assigner(Visitor):
 
     def visit_function_declarator(self, node: Node) -> Any:
         self.assign_name(node)
-            
+
     def visit_type_identifier(self, node: Node) -> Any:
         self.assign_name(node)
 
@@ -138,7 +141,7 @@ class Assigner(Visitor):
     def visit_enum_specifier(self, node: Node) -> Any:
         self.visit(node)
         self.name.pop()
-   
+
     def visit_function_definition(self, node: Node) -> Any:
         self.visit(node)
         self.name.pop()
@@ -152,6 +155,7 @@ class Assigner(Visitor):
     def visit_class_specifier(self, node: Node) -> Any:
         self.visit(node)
         self.name.pop()
+
 
 def assign_name_graph(g: Graph):
     assigner = Assigner()
