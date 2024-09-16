@@ -124,7 +124,7 @@ class Assigner(Visitor):
 
     def visit_namespace_definition(self, node: Node) -> Any:
         self.visit(node)
-        # self.name.pop()
+        self.name.pop()
 
     def visit_preproc_ifdef(self, node: Node) -> Any:
         self.visit(node)
@@ -144,7 +144,10 @@ class Assigner(Visitor):
         self.name.pop()
 
     def visit_field_declaration(self, node: Node) -> Any:
-        pass
+        for child in node.children:
+            if child.type == "class_specifier":
+                self.visit(child)
+                self.name.pop()
 
     def visit_class_specifier(self, node: Node) -> Any:
         self.visit(node)

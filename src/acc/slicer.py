@@ -58,8 +58,11 @@ class Slicer(Visitor):
             pass
         elif is_field_class_declarator(node):
             assert node.children[0].type == "class_specifier"
-            self.nested_class_declarator.append(node.children[0])
-            self.nested_class_global.append(node.children[0])
+            nest = node.children[0]
+            parts = nest.name.split('.')
+            parts.pop(-2)
+            nest.name = '.'.join(parts)
+            self.nested_class_declarator.append(nest)
         else:
             self.field_declarator.append(node.ts_node)
 
@@ -71,7 +74,7 @@ class Slicer(Visitor):
         for child in node.children:
             self.visit(child)
         
-        class_name = get_class_name(node)
+        class_name = node.name
         data = collect_class_data(class_name, self.field_declarator)
         func = collect_class_func(class_name, self.funtion_definition)
         if data:
@@ -154,9 +157,20 @@ def collect_class_data(class_name, fields) -> Node:
     if len(fields) == 0: return None
     fields_text = '\n'.join('    ' + field.text.decode('utf-8')
                             for field in fields)
-    code = f"""
+    parts = class_name.split('.')
+    assert len(parts) in [1, 2]
+    if len(parts) == 1:
+        code = f"""
 class {class_name} {{
 {fields_text}
+}};
+    """
+    else:
+        code = f"""
+namespce {parts[0]} {{
+    class {parts[1]} {{
+{fields_text}
+    }}
 }};
     """
     return parse(code).root
@@ -171,7 +185,7 @@ def collect_class_func(class_name, funcs) -> Dict[str, Node]:
         name = d.child_by_field_name('declarator').text.decode('utf-8')
         para = d.text.decode('utf-8')
         text = f"""
-        {type} {class_name}::{para} {stmt}
+        {type} {class_name.replace('.', '::')}::{para} {stmt}
         """
         node = parse(text).root
         for j in range(0, 100):
