@@ -1,8 +1,8 @@
 import os
 
-from acc.ir import *
-from acc.parser import parse
-from acc.config import *
+from llmcc.ir import *
+from llmcc.parser import parse
+from llmcc.config import *
 
 
 def search_file(directory, filename) -> str:
@@ -26,6 +26,7 @@ class Includer(Visitor):
         return g
 
     def visit_preproc_include(self, tree, node: Node) -> Graph:
+        # TODO: this acutally is a recursive process..
         include_file = node.children[1].text.decode('utf-8')
         include_file = search_file(self.dir, include_file.replace('"', ''))
         log.debug(f"searching include {include_file}")

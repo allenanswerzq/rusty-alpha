@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import Dict, Any, Optional, Tuple, Union, Type, List
 from abc import ABC, abstractmethod
 
-from acc.store import Store
+from llmcc.store import Store
 
 
 class Node(BaseModel):

@@ -1,9 +1,9 @@
 import ell
 import json
 
-from acc.ir import *
-from acc.config import *
-from acc.parser import parse
+from llmcc.ir import *
+from llmcc.config import *
+from llmcc.parser import parse
 from pydantic import BaseModel, Field
 
 import tree_sitter_rust as tsrust

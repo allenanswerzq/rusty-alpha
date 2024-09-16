@@ -3,9 +3,9 @@ import tree_sitter_cpp as tscpp
 from tree_sitter import Language, Parser
 from tree_sitter import Node as TsNode
 
-from acc.ir import *
-from acc.parser import parse
-from acc.config import *
+from llmcc.ir import *
+from llmcc.parser import parse
+from llmcc.config import *
 
 CPP_LANGUAGE = Language(tscpp.language())
 

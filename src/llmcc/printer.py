@@ -1,4 +1,4 @@
-from acc.ir import *
+from llmcc.ir import *
 
 
 class Printer(Visitor):

@@ -1,11 +1,11 @@
 import argparse
 
-from acc.parser import parse_from_file
-from acc.compiler import compile_graph
-from acc.printer import write_graph, print_graph
-from acc.config import *
-from acc.includer import include_graph
-from acc.slicer import slice_graph
+from llmcc.parser import parse_from_file
+from llmcc.compiler import compile_graph
+from llmcc.printer import write_graph, print_graph
+from llmcc.config import *
+from llmcc.includer import include_graph
+from llmcc.slicer import slice_graph
 
 
 def main():

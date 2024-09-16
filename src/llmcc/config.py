@@ -1,4 +1,4 @@
-from acc.logger import get_colored_logger
+from llmcc.logger import get_colored_logger
 
 log = get_colored_logger()
 
