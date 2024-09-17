@@ -23,7 +23,7 @@ class Includer(Visitor):
             if hasattr(self, f"visit_{child.type}"):
                 getattr(self, f"visit_{child.type}")(child)
         return self.og
-    
+
     def visit_preproc_ifdef(self, node: Node):
         self.visit(node)
 

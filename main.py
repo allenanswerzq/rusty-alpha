@@ -14,9 +14,7 @@ from llmcc.slicer import slice_graph
 def main(source, include_dir, output):
     log.info(f"ai compiling {source}")
     g = parse_from_file(source)
-    ng = include_graph(g, include_dir)
-    if ng:
-        g = ng
+    g = include_graph(g, include_dir)
     log.debug(g.root.text.decode("utf-8"))
     print_graph(g)
     slice_graph(g)
