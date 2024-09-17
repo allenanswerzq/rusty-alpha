@@ -1,7 +1,7 @@
 import unittest
 
-from acc.parser import parse_doc
-from acc.printer import print_graph
+from llmcc.parser import parse_doc
+from llmcc.printer import print_graph
 
 class TestParser(unittest.TestCase):
 

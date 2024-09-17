@@ -1,7 +1,7 @@
 import unittest
 import tempfile
 import os
-from acc.store import Store
+from llmcc.store import Store
 
 class TestStore(unittest.TestCase):
 

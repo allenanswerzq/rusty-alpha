@@ -37,7 +37,7 @@ class Writer(Visitor):
         source_code = store["source_code"]
         self.file.write("//|" + source_code.text.decode("utf-8").replace("\n", "\n//|"))
         self.file.write("\n")
-        self.file.write(parsed.text.decode("utf-8"))
+        self.file.write(parsed.root.text.decode("utf-8"))
         self.file.write("\n")
 
     def visit(self, node: Node) -> Any:

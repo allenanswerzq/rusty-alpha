@@ -1,7 +1,7 @@
 import os
 
 from llmcc.ir import *
-from llmcc.parser import parse
+from llmcc.parser import parse, parse_from_file
 from llmcc.config import *
 
 
@@ -27,16 +27,17 @@ class Includer(Visitor):
         return g
 
     def visit_preproc_include(self, tree, node: Node) -> Graph:
-        # TODO: this acutally is a recursive process..
         include_file = node.children[1].text.decode("utf-8")
         include_file = search_file(self.dir, include_file.replace('"', ""))
         log.debug(f"searching include {include_file}")
         if not include_file:
             return None
-        old_src = tree.text
-        with open(include_file, "r") as f:
-            inc_src = f.read()
-            inc_len = len(inc_src)
+        g = parse_from_file(include_file)
+        ng = include_graph(g, self.dir)
+        if ng: g = ng
+        old_src = node.text
+        inc_src = g.root.text
+        inc_len = len(inc_src)
         new_src = inc_src.encode("utf-8") + old_src
         tree.ts_node.edit(
             start_byte=0,
@@ -53,6 +54,4 @@ class Includer(Visitor):
 
 def include_graph(g: Graph, dir: str) -> Graph:
     i = Includer(dir, g.tree)
-    ng = g.accept(i)
-    if ng:
-        return ng
+    return g.accept(i)

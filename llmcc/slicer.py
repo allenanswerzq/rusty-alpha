@@ -93,28 +93,6 @@ def slice_graph(g: Graph) -> Any:
     return g.accept(compiler)
 
 
-def get_class_name(node: TsNode | Node):
-    query = CPP_LANGUAGE.query(
-        """
-        (
-        (class_specifier
-        (type_identifier) @class_name)
-        )
-        (
-        (struct_specifier
-        (type_identifier) @class_name)
-        )
-        """
-    )
-
-    if isinstance(node, Node):
-        node = node.ts_node
-
-    captures = query.captures(node)
-    assert "class_name" in captures
-    return captures["class_name"][0].text.decode("utf-8")
-
-
 def is_field_func_declarator(node: TsNode | Node):
     query = CPP_LANGUAGE.query(
         """

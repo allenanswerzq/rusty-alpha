@@ -61,7 +61,7 @@ class Compiler(Visitor):
         if node.code_store is None:
             node.code_store = Store()
         parsed = parse(parsed.target_code, lan=Language(tsrust.language()))
-        node.code_store.add_version({"parsed": parsed.root, "source_code": node})
+        node.code_store.add_version({"parsed": parsed, "source_code": node})
 
     def visit(self, node: Node) -> Any:
         for child in node.children:
