@@ -104,7 +104,7 @@ class Assigner(Visitor):
             name = name.split("(")[0]
         node.parent.name = ".".join(self.name) + "." + name
         self.name.append(name)
-        print(self.name)
+        # print(self.name)
 
     def visit_namespace_identifier(self, node: Node) -> Any:
         self.assign_name(node)

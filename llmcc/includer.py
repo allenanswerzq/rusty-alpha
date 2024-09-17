@@ -3,6 +3,7 @@ import os
 from llmcc.ir import *
 from llmcc.parser import parse, parse_from_file
 from llmcc.config import *
+from llmcc.printer import print_graph
 
 
 def search_file(directory, filename) -> str:
@@ -13,33 +14,33 @@ def search_file(directory, filename) -> str:
 
 class Includer(Visitor):
 
-    def __init__(self, dir, tree):
+    def __init__(self, dir, g):
         self.dir = dir
-        self.tree = tree
+        self.og = g
 
-    def visit(self, node: Node) -> Any:
-        g = None
+    def visit(self, node: Node) -> Graph:
         for child in node.children:
             if hasattr(self, f"visit_{child.type}"):
-                ng = getattr(self, f"visit_{child.type}")(node, child)
-                if ng:
-                    g = ng
-        return g
+                getattr(self, f"visit_{child.type}")(child)
+        return self.og
+    
+    def visit_preproc_ifdef(self, node: Node):
+        self.visit(node)
 
-    def visit_preproc_include(self, tree, node: Node) -> Graph:
+    def visit_preproc_include(self, node: Node):
         include_file = node.children[1].text.decode("utf-8")
         include_file = search_file(self.dir, include_file.replace('"', ""))
-        log.debug(f"searching include {include_file}")
         if not include_file:
             return None
+        log.debug(f"found include file {include_file}")
         g = parse_from_file(include_file)
-        ng = include_graph(g, self.dir)
-        if ng: g = ng
-        old_src = node.text
-        inc_src = g.root.text
+        # print_graph(g)
+        g = include_graph(g, self.dir)
+        inc_src = g.root.text.decode("utf-8")
+        old_src = self.og.root.text.decode("utf-8")
         inc_len = len(inc_src)
-        new_src = inc_src.encode("utf-8") + old_src
-        tree.ts_node.edit(
+        new_src = inc_src + old_src
+        self.og.root.ts_node.edit(
             start_byte=0,
             old_end_byte=0,
             new_end_byte=inc_len,
@@ -47,11 +48,10 @@ class Includer(Visitor):
             old_end_point=(0, 0),
             new_end_point=(0, inc_len),
         )
-        ng = parse(new_src, self.tree)
-        self.tree = ng
-        return ng
+        ng = parse(new_src, self.og.tree)
+        self.og = ng
 
 
 def include_graph(g: Graph, dir: str) -> Graph:
-    i = Includer(dir, g.tree)
+    i = Includer(dir, g)
     return g.accept(i)

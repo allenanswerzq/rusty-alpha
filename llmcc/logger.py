@@ -32,7 +32,7 @@ def get_colored_logger():
     ch.setLevel(logging.DEBUG)
 
     # Create a colored formatter
-    formatter = ColoredFormatter("%(asctime)s %(levelname)s - %(message)s")
+    formatter = ColoredFormatter("%(asctime)s [%(filename)s:%(lineno)d] %(levelname)s - %(message)s")
     ch.setFormatter(formatter)
 
     # Add the console handler to the logger
