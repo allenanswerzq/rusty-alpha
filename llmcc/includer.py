@@ -34,8 +34,8 @@ class Includer(Visitor):
             return None
         log.debug(f"found include file {include_file}")
         g = parse_from_file(include_file)
-        # print_graph(g)
         g = include_graph(g, self.dir)
+        # TOOD: compile the header file first, then add the compiled code
         inc_src = g.root.text.decode("utf-8")
         old_src = self.og.root.text.decode("utf-8")
         inc_len = len(inc_src)
