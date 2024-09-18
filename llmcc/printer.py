@@ -1,4 +1,5 @@
 from llmcc.ir import *
+from llmcc.config import *
 
 
 class Printer(Visitor):
@@ -32,6 +33,7 @@ class Writer(Visitor):
         self.file.close()
 
     def write(self, node):
+        log.info(f"writing {node.type} {node.name}")
         store = node.code_store.get_current_version()
         parsed = store["parsed"]
         source_code = store["source_code"]
@@ -41,6 +43,12 @@ class Writer(Visitor):
         self.file.write("\n")
 
     def visit(self, node: Node) -> Any:
+        if node.type == "translation_unit" and node.depends_store:
+            depends = node.depends_store.get_current_version()
+            if "include_files" in depends:
+                for include in depends["include_files"]:
+                    self.write(include.root)
+
         if node.type in ["class_specifier", "struct_specifier"]:
             assert node.depends_store
             depend = node.depends_store.get_current_version()
@@ -55,10 +63,9 @@ class Writer(Visitor):
 
         if node.code_store:
             self.write(node)
-
+        
         for child in node.children:
             self.visit(child)
-        return None
 
 
 def write_graph(g: Graph, file: str):

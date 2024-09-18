@@ -3,16 +3,17 @@ import tree_sitter_cpp as tscpp
 from tree_sitter import Language, Parser
 from tree_sitter import Node as TsNode
 from llmcc.ir import *
+from llmcc.config import *
 
 CPP_LANGUAGE = Language(tscpp.language())
 
 
 def parse_from_file(file) -> Graph:
     with open(file, "r") as f:
-        return parse(f.read())
+        return parse(f.read(), file_name=file)
 
 
-def parse(code: str | bytearray, old_tree=None, lan=None) -> Graph:
+def parse(code: str | bytearray, old_tree=None, lan=None, file_name=None) -> Graph:
     if isinstance(code, str):
         code = code.encode("utf-8")
 
@@ -26,14 +27,15 @@ def parse(code: str | bytearray, old_tree=None, lan=None) -> Graph:
     else:
         tree = parser.parse(bytes(code))
 
-    return _tree_to_graph(tree)
+    return _tree_to_graph(tree, file_name=file_name)
 
 
-def _tree_to_graph(tree) -> Graph:
+def _tree_to_graph(tree, file_name=None) -> Graph:
     g = Graph()
     ts_root = tree.root_node
     root = create_node(ts_root, Node(name="."))
     g.root = root
+    g.root.name = file_name
 
     # Use a stack for depth-first traversal
     stack = [(ts_root, root)]

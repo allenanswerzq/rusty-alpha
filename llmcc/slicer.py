@@ -49,7 +49,7 @@ class Slicer(Visitor):
 
     def visit_function_definition(self, node: Node) -> Any:
         # log.debug(node.text)
-        log.debug(node.rows)
+        # log.debug(node.rows)
         self.funtion_definition.append(node)
 
     def visit_field_declaration(self, node: Node) -> Any:
