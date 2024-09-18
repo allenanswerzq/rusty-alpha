@@ -85,10 +85,10 @@ class MockProvider(Provider):
         return MockAzureOpenAIClient
 
 
-default_client = MockAzureOpenAIClient(**_client_params)
-ell.config.register_provider(MockProvider)
-ell.config.register_model("gpt-4-turbo", default_client)
+# default_client = MockAzureOpenAIClient(**_client_params)
+# ell.config.register_provider(MockProvider)
+# ell.config.register_model("gpt-4-turbo", default_client)
 
-# default_client = AzureOpenAIClient(**_client_params)
-# ell.config.register_model('gpt-4-turbo', default_client)
+default_client = AzureOpenAIClient(**_client_params)
+ell.config.register_model('gpt-4-turbo', default_client)
 # ell.init(store='./logdir')

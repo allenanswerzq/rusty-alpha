@@ -40,7 +40,7 @@ class Compiler(Visitor):
         ]
 
     def compile(self, node: Node):
-        log.info(f"compiling {node.type}")
+        log.info(f"compiling {node.type} {node.name}")
         for i in range(3):
             try:
                 unparsed = self.compile_impl(node)
@@ -56,10 +56,11 @@ class Compiler(Visitor):
                 log.error(e)
                 log.info(f"retrying compiling {node.type}")
                 continue
-            finally:
+            else:
                 break
         if node.code_store is None:
             node.code_store = Store()
+        assert parsed
         parsed = parse(parsed.target_code, lan=Language(tsrust.language()))
         node.code_store.add_version({"parsed": parsed, "source_code": node})
 
