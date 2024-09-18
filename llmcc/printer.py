@@ -27,7 +27,8 @@ def print_graph(g: Graph):
 class Writer(Visitor):
 
     def __init__(self, file):
-        self.file = open(file, "w")
+        self.file_name = file
+        self.file = open(file, "a+")
 
     def __del__(self):
         self.file.close()
@@ -47,7 +48,7 @@ class Writer(Visitor):
             depends = node.depends_store.get_current_version()
             if "include_files" in depends:
                 for include in depends["include_files"]:
-                    self.write(include.root)
+                    write_graph(include, self.file_name)
 
         if node.type in ["class_specifier", "struct_specifier"]:
             assert node.depends_store
@@ -63,7 +64,7 @@ class Writer(Visitor):
 
         if node.code_store:
             self.write(node)
-        
+
         for child in node.children:
             self.visit(child)
 

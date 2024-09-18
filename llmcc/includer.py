@@ -9,7 +9,7 @@ from llmcc.store import Store
 
 def search_file(directory, filename) -> str:
     for root, dirs, files in os.walk(directory):
-        if filename in files or filename.replace('.h', '.rs') in files:
+        if filename in files or filename.replace(".h", ".rs") in files:
             return os.path.join(root, filename)
 
 
@@ -28,7 +28,7 @@ class Includer(Visitor):
         root = self.og.root
         if root.depends_store is None:
             root.depends_store = Store()
-        root.depends_store.add_version({"include_files" : self.include_files})
+        root.depends_store.add_version({"include_files": self.include_files})
 
     def visit_preproc_ifdef(self, node: Node):
         self.visit(node)

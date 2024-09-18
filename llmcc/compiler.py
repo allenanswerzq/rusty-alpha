@@ -1,12 +1,13 @@
 import ell
 import json
+import tree_sitter_rust
 
 from llmcc.ir import *
 from llmcc.config import *
 from llmcc.parser import parse
-from pydantic import BaseModel, Field
+from llmcc.slicer import slice_graph
 
-import tree_sitter_rust as tsrust
+from pydantic import BaseModel, Field
 from tree_sitter import Language, Parser
 
 
@@ -61,7 +62,7 @@ class Compiler(Visitor):
         if node.code_store is None:
             node.code_store = Store()
         assert parsed
-        parsed = parse(parsed.target_code, lan=Language(tsrust.language()))
+        parsed = parse(parsed.target_code, lan=Language(tree_sitter_rust.language()))
         node.code_store.add_version({"parsed": parsed, "source_code": node})
 
     def visit(self, node: Node) -> Any:
@@ -69,7 +70,9 @@ class Compiler(Visitor):
             depends = node.depends_store.get_current_version()
             if "include_files" in depends:
                 for include in depends["include_files"]:
-                    self.compile(include.root)
+                    slice_graph(include)
+                    compile_graph(include)
+                    # self.compile(include.root)
 
         for child in node.children:
             if hasattr(self, f"visit_{child.type}"):

@@ -1,4 +1,4 @@
-import tree_sitter_cpp as tscpp
+import tree_sitter_cpp
 
 from tree_sitter import Language, Parser
 from tree_sitter import Node as TsNode
@@ -7,7 +7,7 @@ from llmcc.ir import *
 from llmcc.parser import parse
 from llmcc.config import *
 
-CPP_LANGUAGE = Language(tscpp.language())
+CPP_LANGUAGE = Language(tree_sitter_cpp.language())
 
 
 class Slicer(Visitor):
