@@ -1,1 +1,1 @@
-rusty-alpha
+llmcc: llm concept compiler
