@@ -8,10 +8,11 @@ from llmcc.config import *
 from llmcc.includer import include_graph
 from llmcc.slicer import slice_graph
 
+
 @click.command()
-@click.option('-c', '--source', help='The source file to compile')
-@click.option('-I', '--include-dir',  help='Include directory')
-@click.option('-o', '--output', help="The output file")
+@click.option("-c", "--source", help="The source file to compile")
+@click.option("-I", "--include-dir", help="Include directory")
+@click.option("-o", "--output", help="The output file")
 def main(source, include_dir, output):
     if os.path.exists(output):
         os.remove(output)
@@ -20,7 +21,7 @@ def main(source, include_dir, output):
     g = parse_from_file(source)
     include_graph(g, include_dir)
     # log.debug(g.root.text.decode("utf-8"))
-    # print_graph(g)
+    print_graph(g)
     slice_graph(g)
     compile_graph(g)
     write_graph(g, output)

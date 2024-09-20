@@ -7,7 +7,9 @@ from phi.utils.log import logger
 from azure.identity import DefaultAzureCredential
 from azure.identity import get_bearer_token_provider
 
-token_provider = get_bearer_token_provider(DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")
+token_provider = get_bearer_token_provider(
+    DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default"
+)
 
 # Initialize the OpenAI chat model
 chat_model = AzureOpenAIChat(
@@ -28,4 +30,3 @@ assistant = Assistant(
 )
 
 assistant.print_response("Whats happening in France?", markdown=True)
-

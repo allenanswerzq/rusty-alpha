@@ -4,6 +4,7 @@ from llmcc.parser import parse_doc
 from llmcc.compiler import compile_graph
 from llmcc.printer import write_graph, print_graph
 
+
 class TestCompiler(unittest.TestCase):
 
     @parse_doc()
@@ -34,5 +35,5 @@ class TestCompiler(unittest.TestCase):
         write_graph(g, "a.rs")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

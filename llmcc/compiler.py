@@ -91,15 +91,15 @@ class Compiler(Visitor):
         self.compile(node)
 
     def visit_class_specifier(self, node: Node) -> Any:
-        assert node.depends_store
-        depend = node.depends_store.get_current_version()
+        assert node.slice_store
+        depend = node.slice_store.get_current_version()
         data_node = depend["data"]
         func_nodes = depend["func"]
         assert data_node or func_nodes
         if data_node:
             self.compile(data_node)
         if func_nodes:
-            for f, v in func_nodes:
+            for f, v in func_nodes.items():
                 self.compile(v)
 
     def visit_function_definition(self, node: Node) -> Any:

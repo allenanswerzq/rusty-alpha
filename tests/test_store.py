@@ -3,6 +3,7 @@ import tempfile
 import os
 from llmcc.store import Store
 
+
 class TestStore(unittest.TestCase):
 
     def setUp(self):
@@ -53,5 +54,6 @@ class TestStore(unittest.TestCase):
 
         os.unlink(filename)  # Clean up the temporary file
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

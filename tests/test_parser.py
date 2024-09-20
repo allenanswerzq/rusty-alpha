@@ -3,6 +3,7 @@ import unittest
 from llmcc.parser import parse_doc
 from llmcc.printer import print_graph
 
+
 class TestParser(unittest.TestCase):
 
     @parse_doc()
@@ -15,6 +16,5 @@ class TestParser(unittest.TestCase):
         print_graph(g)
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -4,6 +4,8 @@ from llmcc.parser import parse_doc
 from llmcc.compiler import compile_graph
 from llmcc.printer import write_graph, print_graph
 from llmcc.slicer import *
+from llmcc.analyzer import analysis_graph
+
 
 class TestSlicer(unittest.TestCase):
 
@@ -13,9 +15,10 @@ class TestSlicer(unittest.TestCase):
         namespace Slicer {
             enum Color {RED, BLACK, DOUBLE_BLACK};
             class Foo {
+                static const int var = 2;
                 // define a
                 int *a;
-                Bar b;
+                Color b;
                 int c;
                 void * f = int(a, b);
 
@@ -42,7 +45,7 @@ class TestSlicer(unittest.TestCase):
             };
 
             void Foo::bar() {
-                printf("hello"); 
+                printf("hello");
             }
         }
 
@@ -52,8 +55,11 @@ class TestSlicer(unittest.TestCase):
         """
         print_graph(g)
         slice_graph(g)
+        analysis_graph(g)
+        for k, v in g.node_map.items():
+            print(k, v)
+        # slice_graph(g)
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

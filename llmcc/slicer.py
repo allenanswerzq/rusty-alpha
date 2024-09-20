@@ -12,11 +12,12 @@ CPP_LANGUAGE = Language(tree_sitter_cpp.language())
 
 class Slicer(Visitor):
 
-    def __init__(self):
+    def __init__(self, g):
         self.field_declarator = []
         self.funtion_definition = []
         self.nested_class_declarator = []
         self.nested_class_global = []
+        self.g = g
 
     def visit(self, node: Node) -> Any:
         for child in node.children:
@@ -27,6 +28,10 @@ class Slicer(Visitor):
                 n = len(self.nested_class_declarator)
                 self.nested_class_global.extend(self.nested_class_declarator)
                 for nest in self.nested_class_global[-n:]:
+                    parent = self.g.id_map[node.id]
+                    if parent.depends_store is None:
+                        parent.depends_store = Store()
+                    parent.depends_store.add_version({"nest_class": nest})
                     self.visit_class_specifier(nest)
 
     def visit_declaration_list(self, node: Node) -> Any:
@@ -59,10 +64,18 @@ class Slicer(Visitor):
         elif is_field_class_declarator(node):
             assert node.children[0].type == "class_specifier"
             nest = node.children[0]
+            self.nested_class_declarator.append(nest)
+            # change name after we move the nested class out
+            self.g.node_map.pop(nest.name)
             parts = nest.name.split(".")
             parts.pop(-2)
             nest.name = ".".join(parts)
-            self.nested_class_declarator.append(nest)
+            self.g.node_map[nest.name] = nest.id
+            # reassign all names below this node
+            assigner = Assigner(self.g)
+            parts.pop(-1)
+            assigner.name = parts
+            assigner.visit(node)
         else:
             self.field_declarator.append(node.ts_node)
 
@@ -82,14 +95,14 @@ class Slicer(Visitor):
         if func:
             for k, v in func.items():
                 log.debug(v.text)
-        if node.depends_store is None:
-            node.depends_store = Store()
+        if node.slice_store is None:
+            node.slice_store = Store()
         if data or func:
-            node.depends_store.add_version({"data": data, "func": func})
+            node.slice_store.add_version({"data": data, "func": func})
 
 
 def slice_graph(g: Graph) -> Any:
-    compiler = Slicer()
+    compiler = Slicer(g)
     return g.accept(compiler)
 
 

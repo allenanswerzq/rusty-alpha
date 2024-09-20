@@ -5,10 +5,12 @@ from typing import Dict, Any, Optional, Tuple, Union, Type, List
 from abc import ABC, abstractmethod
 
 from llmcc.store import Store
+from llmcc.config import *
 
 
 class Node(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
+    id: int = Field(default=None, description="unique id for every node")
     name: str = Field(default=None, description="full qualified name of the node.")
     parent: Optional["Node"] = Field(default=None, description="part of the node.")
     ts_node: TsNode = Field(default=None, description="tree sitter node.")
@@ -23,6 +25,9 @@ class Node(BaseModel):
     )
     depends_store: Optional[Store] = Field(
         default=None, description="the stuff this node depends."
+    )
+    slice_store: Optional[Store] = Field(
+        default=None, description="the storage save sliced stuff."
     )
     sym_table_store: Optional[Store] = Field(
         default=None, description="symbol table storage"
@@ -73,38 +78,51 @@ class Context:
 class Graph(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     root: Node = Field(default=None, description="root node for the ir graph")
-    tree: TsTree = Field(default=None, description="ts tree")
+    node_map: Dict[str, int] = Field(
+        default=None, description="map node name to node id"
+    )
+    id_map: Dict[int, Node] = Field(default=None, description="map node it to node")
 
-    def __str__(self):
-        return str(self.root.ts_node).replace("(", "\n(")
+    # def __str__(self):
+    #     return str(self.root.ts_node).replace("(", "\n(")
 
     def accept(self, visitor: "Visitor") -> Any:
         return visitor.visit(self.root)
 
 
-def create_node(ts_node: TsNode, parent: Node) -> Node:
-    return Node(ts_node=ts_node, parent=parent)
+_id = 0
+
+
+def create_node(g: Graph, ts_node: TsNode, parent: Node) -> Node:
+    global _id
+    _id += 1
+    g.id_map[_id] = Node(ts_node=ts_node, parent=parent, id=_id)
+    return g.id_map[_id]
 
 
 # assign name to node
 class Assigner(Visitor):
 
-    def __init__(self):
+    def __init__(self, g: Graph):
         self.name = []
+        self.g = g
 
     def visit(self, node: Node) -> Any:
         for child in node.children:
             if hasattr(self, f"visit_{child.type}"):
-                # print(f"visiting {child.type}")
                 getattr(self, f"visit_{child.type}")(child)
 
     def assign_name(self, node):
+        if node.parent.name:
+            self.g.node_map.pop(node.parent.name)
+
         name = node.text.decode("utf-8").replace("::", ".")
         if node.type == "function_declarator":
             name = name.split("(")[0]
+
         node.parent.name = ".".join(self.name) + "." + name
+        self.g.node_map[node.parent.name] = node.id
         self.name.append(name)
-        # print(self.name)
 
     def visit_namespace_identifier(self, node: Node) -> Any:
         self.assign_name(node)
@@ -158,5 +176,5 @@ class Assigner(Visitor):
 
 
 def assign_name_graph(g: Graph):
-    assigner = Assigner()
+    assigner = Assigner(g)
     return g.accept(assigner)

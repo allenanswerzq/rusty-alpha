@@ -32,8 +32,10 @@ def parse(code: str | bytearray, old_tree=None, lan=None, file_name=None) -> Gra
 
 def _tree_to_graph(tree, file_name=None) -> Graph:
     g = Graph()
+    g.node_map = {}
+    g.id_map = {}
     ts_root = tree.root_node
-    root = create_node(ts_root, Node(name="."))
+    root = create_node(g, ts_root, Node(name=""))
     g.root = root
     g.root.name = file_name
 
@@ -44,7 +46,7 @@ def _tree_to_graph(tree, file_name=None) -> Graph:
         ts_node, ra_node = stack.pop()
 
         for child in ts_node.children:
-            child_ra_node = create_node(child, ra_node)
+            child_ra_node = create_node(g, child, ra_node)
             ra_node.children.append(child_ra_node)
             stack.append((child, child_ra_node))
 
