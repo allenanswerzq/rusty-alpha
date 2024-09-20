@@ -157,9 +157,9 @@ def collect_class_data(class_name, fields) -> Node:
     fields_text = "\n".join("    " + field.text.decode("utf-8") for field in fields)
     parts = class_name.split(".")
     assert len(parts) in [1, 2]
-    if len(parts[0]) == 0:
+    if len(parts) == 1:
         code = f"""
-class {parts[1]} {{
+class {parts[0]} {{
 {fields_text}
 }};
     """

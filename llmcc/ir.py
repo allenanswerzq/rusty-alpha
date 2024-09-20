@@ -120,7 +120,8 @@ class Assigner(Visitor):
         if node.type == "function_declarator":
             name = name.split("(")[0]
 
-        node.parent.name = ".".join(self.name) + "." + name
+        node.parent.name = ".".join(self.name + [name]) 
+
         self.g.node_map[node.parent.name] = node.id
         self.name.append(name)
 
