@@ -43,22 +43,29 @@ class Analyzer(Visitor):
             ty = capture["type_identifier"][0]
             return ty.text.decode("utf-8")
 
+    def resolve_depend(self, name):
+        assert len(self.curr_node) > 0
+        cur = self.curr_node[-1]
+        if cur.depend_store is None:
+            cur.depend_store = Store()
+        depend_nodes = self.g.resolve_name(name, cur)
+        # assert len(depend_nodes) > 0
+        for depend_node in depend_nodes:
+            log.debug(f"{cur.name} depends `{depend_node.name}'")
+            cur.depend_store.append_version({name: depend_node})
+
     def visit_field_declaration(self, node: Node) -> Any:
         ty = self.query_custom_type(node)
         if ty:
-            assert len(self.curr_node) > 0
-            cur = self.curr_node[-1]
-            if cur.depends_store is None:
-                cur.depends_store = Store()
-            depend_node = self.g.resolve_name(ty, cur)
-            log.debug(f"{cur.name} depends `{ty}'")
-            cur.depends_store.append_version({ty: depend_node})
+            self.resolve_depend(ty)
 
     def visit_declaration(self, node: Node) -> Any:
         self.visit_field_declaration(node)
 
     def visit_call_expression(self, node: Node) -> Any:
-        log.debug(node.text)
+        call = node.text.decode("utf-8").split("(")[0]
+        assert len(self.curr_node) > 0
+        self.resolve_depend(call)
 
     def visit_preproc_ifdef(self, node: Node) -> Any:
         self.visit(node)
@@ -84,7 +91,18 @@ class Analyzer(Visitor):
         self.visit(node, continue_down=True)
         self.curr_node.pop()
 
+        # if this function inside a class, it should also depends on this class
+        if len(node.name.split('.')) >= 3:
+            name = node.name.split('.')[-3]
+            if node.depend_store is None:
+                node.depend_store = Store()
+            depend_nodes = self.g.resolve_name(name, node)
+            for depend_node in depend_nodes:
+                log.debug(f"{node.name} depends `{depend_node.name}'")
+                node.depend_store.append_version({name: depend_node})
 
-def analysis_graph(g: Graph) -> Any:
+
+
+def analyze_graph(g: Graph) -> Any:
     analyzer = Analyzer(g)
     return g.accept(analyzer)

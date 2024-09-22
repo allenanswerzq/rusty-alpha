@@ -29,9 +29,9 @@ class Slicer(Visitor):
                 self.nested_class_global.extend(self.nested_class_declarator)
                 for nest in self.nested_class_global[-n:]:
                     parent = self.g.id_map[node.id]
-                    if parent.depends_store is None:
-                        parent.depends_store = Store()
-                    parent.depends_store.add_version({"nest_class": nest})
+                    if parent.depend_store is None:
+                        parent.depend_store = Store()
+                    parent.depend_store.add_version({"nest_class": nest})
                     self.visit_class_specifier(nest)
 
     def visit_declaration_list(self, node: Node) -> Any:

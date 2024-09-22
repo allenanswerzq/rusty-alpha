@@ -26,9 +26,9 @@ class Includer(Visitor):
                 getattr(self, f"visit_{child.type}")(child)
 
         root = self.og.root
-        if root.depends_store is None:
-            root.depends_store = Store()
-        root.depends_store.add_version({"include_files": self.include_files})
+        if root.depend_store is None:
+            root.depend_store = Store()
+        root.depend_store.add_version({"include_files": self.include_files})
 
     def visit_preproc_ifdef(self, node: Node):
         self.visit(node)
@@ -36,7 +36,7 @@ class Includer(Visitor):
     def visit_preproc_include(self, node: Node):
         include_file = node.children[1].text.decode("utf-8")
         include_file = search_file(self.dir, include_file.replace('"', ""))
-        if not include_file:
+        if include_file is None:
             return None
         log.debug(f"found include file {include_file}")
         g = parse_from_file(include_file)

@@ -66,8 +66,8 @@ class Compiler(Visitor):
         node.code_store.add_version({"parsed": parsed, "source_code": node})
 
     def visit(self, node: Node) -> Any:
-        if node.type == "translation_unit" and node.depends_store:
-            depends = node.depends_store.get_current_version()
+        if node.type == "translation_unit" and node.depend_store:
+            depends = node.depend_store.get_current_version()
             if "include_files" in depends:
                 for include in depends["include_files"]:
                     slice_graph(include)

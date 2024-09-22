@@ -27,7 +27,7 @@ class Node(BaseModel):
     code_store: Optional[Store] = Field(
         default=None, description="multiple version storage for rust code"
     )
-    depends_store: Optional[Store] = Field(
+    depend_store: Optional[Store] = Field(
         default=None, description="the stuff this node depends."
     )
     slice_store: Optional[Store] = Field(
@@ -93,10 +93,25 @@ class Graph(BaseModel):
     def accept(self, visitor: "Visitor") -> Any:
         return visitor.visit(self.root)
 
-    def resolve_name(self, name: str, cur: Node) -> Node:
+    def resolve_name(self, name: str, cur: Node) -> List[Node]:
         """Given a name resolve the node in the lowest scope."""
-
-        pass
+        level = len(cur.name.split("."))
+        if cur.name.endswith(")"):
+            # NOTE: function
+            level -= 1
+        # log.debug(f"resolving {name} for {cur.name} in level {level}")
+        # get a node in the <= level
+        # TODO: improve this algorithm
+        resolved = []
+        for node_name, node_id in self.node_map.items():
+            parts = node_name.split(".")
+            assert len(parts) > 0
+            if parts[-1].startswith("(") and parts[-1].endswith(")"):
+                # Function sybmol, We didn't make difference with the overload functions
+                parts.pop()
+            if len(parts) <= level and parts[-1] == name:
+                resolved.append(self.id_map[node_id])
+        return resolved
 
 
 _id = 0
@@ -161,6 +176,8 @@ class Assigner(Visitor):
         assert len(name), node.parent.text
         if len(param) > 0:
             name += ".(" + param + ")"
+        else:
+            name += ".()"
         return name
 
     def assign_name(self, node):
@@ -173,7 +190,7 @@ class Assigner(Visitor):
 
         node.parent.name = ".".join(self.name + [name])
 
-        self.g.node_map[node.parent.name] = node.id
+        self.g.node_map[node.parent.name] = node.parent.id
         self.name.append(name)
 
     def visit_namespace_identifier(self, node: Node) -> Any:
