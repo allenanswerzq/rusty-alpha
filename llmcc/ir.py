@@ -40,11 +40,11 @@ class Node(BaseModel):
 
     @property
     def type(self) -> str:
-        return self.ts_node.type
+        return self.ts_node.type if self.ts_node else None
 
     @property
     def text(self) -> str:
-        return self.ts_node.text
+        return self.ts_node.text if self.ts_node else None
 
     @property
     def is_named(self) -> bool:
@@ -86,6 +86,7 @@ class Graph(BaseModel):
         default=None, description="map node name to node id"
     )
     id_map: Dict[int, Node] = Field(default=None, description="map node it to node")
+    tree: TsTree = Field(default=None, description="ts tree")
 
     # def __str__(self):
     #     return str(self.root.ts_node).replace("(", "\n(")
@@ -93,14 +94,16 @@ class Graph(BaseModel):
     def accept(self, visitor: "Visitor") -> Any:
         return visitor.visit(self.root)
 
-    def resolve_name(self, name: str, cur: Node) -> List[Node]:
+    def resolve_name(self, name: str, cur: Node, allow_same_level=True) -> List[Node]:
         """Given a name resolve the node in the lowest scope."""
-        level = len(cur.name.split("."))
-        if cur.name.endswith(")"):
-            # NOTE: function
-            level -= 1
         # log.debug(f"resolving {name} for {cur.name} in level {level}")
-        # get a node in the <= level
+        # for k, v in self.node_map.items():
+        #     print(k, v)
+
+        level = len(cur.name.split("."))
+        if cur.name.endswith(")"):  # NOTE: function
+            level -= 1
+
         # TODO: improve this algorithm
         resolved = []
         for node_name, node_id in self.node_map.items():
@@ -109,7 +112,12 @@ class Graph(BaseModel):
             if parts[-1].startswith("(") and parts[-1].endswith(")"):
                 # Function sybmol, We didn't make difference with the overload functions
                 parts.pop()
-            if len(parts) <= level and parts[-1] == name:
+            if (
+                parts[-1] == name
+                and self.id_map[node_id].id != cur.id
+                and (len(parts) < level or (allow_same_level and len(parts) == level))
+            ):
+                # get a node in the <= level
                 resolved.append(self.id_map[node_id])
         return resolved
 
@@ -117,9 +125,12 @@ class Graph(BaseModel):
 _id = 0
 
 
-def create_node(g: Graph, ts_node: TsNode, parent: Node) -> Node:
+def create_node(g: Graph, ts_node: TsNode, parent: Node, restart=False) -> Node:
     global _id
+    if restart:
+        _id = 0
     _id += 1
+    # log.warn(f"{_id} {ts_node.type} {ts_node.text}")
     g.id_map[_id] = Node(ts_node=ts_node, parent=parent, id=_id)
     return g.id_map[_id]
 
@@ -131,13 +142,10 @@ class Assigner(Visitor):
         self.name = []
         self.g = g
 
-    def visit(self, node: Node, continue_down=False) -> Any:
+    def visit(self, node: Node) -> Any:
         for child in node.children:
             if hasattr(self, f"visit_{child.type}"):
                 getattr(self, f"visit_{child.type}")(child)
-
-            elif continue_down:
-                self.visit(child, continue_down=continue_down)
 
     def query_identifier(self, node: Node):
         query = Language(tree_sitter_cpp.language()).query(
@@ -150,9 +158,10 @@ class Assigner(Visitor):
             ty = capture["identifier"][0]
             return ty.text.decode("utf-8")
 
-    def function_name(self, node) -> str:
-        assert node.type == "function_declarator"
+    def get_function_name(self, node) -> str:
+        # assert node.type == "function_declarator"
         param = ""
+        name = ""
         for child in node.children:
             if child.type == "qualified_identifier":
                 name = child.text.decode("utf-8").replace("::", ".")
@@ -183,26 +192,61 @@ class Assigner(Visitor):
         return name
 
     def assign_name(self, node):
-        if node.parent.name:
-            self.g.node_map.pop(node.parent.name)
+        parent = node
+        while parent:
+            if parent.type in ["class_specifier", "struct_specifier", "enum_specifier"]:
+                break
+            parent = parent.parent
+
+        if parent.name:
+            # log.warn(f"trying to assign same name {parent.name} twice")
+            self.g.node_map.pop(parent.name)
 
         name = node.text.decode("utf-8")
-        if node.type == "function_declarator":
-            name = self.function_name(node)
+        full_name = ".".join(self.name + [name])
+        parent.name = full_name
+        # log.warn(f"assign class {full_name} --> {parent.id}")
+        self.g.node_map[full_name] = parent.id
+        self.name.append(name)
 
-        node.parent.name = ".".join(self.name + [name])
+    def assign_func_name(self, node):
+        parent = node
+        while parent:
+            if parent.type in ["function_definition"]:
+                break
+            parent = parent.parent
 
-        self.g.node_map[node.parent.name] = node.parent.id
+        if parent.name:
+            # log.warn(f"trying to assign same name {parent.name} twice")
+            self.g.node_map.pop(parent.name)
+
+        name = self.get_function_name(node)
+        full_name = ".".join(self.name + [name])
+        # log.warn(f"assign func {full_name} --> {parent.id}")
+        parent.name = full_name
+        self.g.node_map[full_name] = parent.id
         self.name.append(name)
 
     def visit_namespace_identifier(self, node: Node) -> Any:
         self.assign_name(node)
 
     def visit_function_declarator(self, node: Node) -> Any:
-        self.assign_name(node)
+        self.assign_func_name(node)
+
+    def visit_pointer_declarator(self, node: Node) -> Any:
+        self.visit(node)
 
     def visit_type_identifier(self, node: Node) -> Any:
-        self.assign_name(node)
+        if node.parent.type in [
+            "class_specifier",
+            "struct_specifier",
+            "enum_specifier",
+        ]:
+            self.assign_name(node)
+        else:
+            pass
+            # funciton like: Node* func() {}
+            # log.warn(node.parent.ts_node)
 
     def visit_declaration(self, node: Node) -> Any:
         pass
@@ -214,14 +258,14 @@ class Assigner(Visitor):
         pass
 
     def visit_namespace_definition(self, node: Node) -> Any:
-        self.visit(node, continue_down=True)
+        self.visit(node)
         self.name.pop()
 
     def visit_preproc_ifdef(self, node: Node) -> Any:
-        self.visit(node, continue_down=True)
+        self.visit(node)
 
     def visit_struct_specifier(self, node: Node) -> Any:
-        self.visit(node, continue_down=True)
+        self.visit(node)
         self.name.pop()
 
     def visit_enum_specifier(self, node: Node) -> Any:
@@ -239,8 +283,14 @@ class Assigner(Visitor):
                 self.name.pop()
 
     def visit_class_specifier(self, node: Node) -> Any:
-        self.visit(node, continue_down=True)
+        self.visit(node)
         self.name.pop()
+
+    def visit_declaration_list(self, node: Node) -> Any:
+        self.visit(node)
+
+    def visit_field_declaration_list(self, node: Node) -> Any:
+        self.visit(node)
 
 
 def assign_name_graph(g: Graph):

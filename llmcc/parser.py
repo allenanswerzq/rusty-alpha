@@ -34,8 +34,10 @@ def _tree_to_graph(tree, file_name=None) -> Graph:
     g = Graph()
     g.node_map = {}
     g.id_map = {}
+    g.tree = tree
+
     ts_root = tree.root_node
-    root = create_node(g, ts_root, Node(name=""))
+    root = create_node(g, ts_root, Node(name=""), restart=True)
     g.root = root
     g.root.name = file_name
 

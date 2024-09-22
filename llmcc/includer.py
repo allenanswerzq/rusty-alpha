@@ -13,6 +13,9 @@ def search_file(directory, filename) -> str:
             return os.path.join(root, filename)
 
 
+_INCLUDER_REPARSE_OPTION = True
+
+
 class Includer(Visitor):
 
     def __init__(self, dir, g):
@@ -20,7 +23,7 @@ class Includer(Visitor):
         self.og = g
         self.include_files = []
 
-    def visit(self, node: Node):
+    def visit(self, node: Node) -> Graph:
         for child in node.children:
             if hasattr(self, f"visit_{child.type}"):
                 getattr(self, f"visit_{child.type}")(child)
@@ -29,6 +32,8 @@ class Includer(Visitor):
         if root.depend_store is None:
             root.depend_store = Store()
         root.depend_store.add_version({"include_files": self.include_files})
+
+        return self.og
 
     def visit_preproc_ifdef(self, node: Node):
         self.visit(node)
@@ -41,23 +46,29 @@ class Includer(Visitor):
         log.debug(f"found include file {include_file}")
         g = parse_from_file(include_file)
         self.include_files.append(g)
-        include_graph(g, self.dir)
-        # inc_src = g.root.text.decode("utf-8")
-        # old_src = self.og.root.text.decode("utf-8")
-        # inc_len = len(inc_src)
-        # new_src = inc_src + old_src
-        # self.og.root.ts_node.edit(
-        #     start_byte=0,
-        #     old_end_byte=0,
-        #     new_end_byte=inc_len,
-        #     start_point=(0, 0),
-        #     old_end_point=(0, 0),
-        #     new_end_point=(0, inc_len),
-        # )
-        # ng = parse(new_src, self.og.tree)
-        # self.og = ng
+        g = include_graph(g, self.dir)
+
+        if _INCLUDER_REPARSE_OPTION:
+            inc_src = g.root.text
+            # log.debug(inc_src)
+            old_src = self.og.root.text
+            # log.debug(old_src)
+            inc_len = len(inc_src)
+            new_src = inc_src + old_src
+            # TODO: make incremental parse work
+            # self.og.root.ts_node.edit(
+            #     start_byte=0,
+            #     old_end_byte=0,
+            #     new_end_byte=inc_len,
+            #     start_point=(0, 0),
+            #     old_end_point=(0, 0),
+            #     new_end_point=(0, inc_len),
+            # )
+            # ng = parse(new_src, self.og.tree)
+            ng = parse(new_src)
+            self.og = ng
 
 
-def include_graph(g: Graph, dir: str):
+def include_graph(g: Graph, dir: str) -> Graph:
     i = Includer(dir, g)
     return g.accept(i)

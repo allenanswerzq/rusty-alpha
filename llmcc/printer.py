@@ -37,20 +37,30 @@ class Writer(Visitor):
         log.info(f"writing {node.type} {node.name}")
         store = node.code_store.get_current_version()
         parsed = store["parsed"]
-        source_code = store["source_code"]
-        self.file.write("//|" + source_code.text.decode("utf-8").replace("\n", "\n//|"))
+        src_node = store["src_node"]
+        if src_node.depend_store:
+            if src_node.depend_store.current_version > 0:
+                depends = src_node.depend_store.get_current_version()
+                for k, v in depends.items():
+                    self.file.write(f"//+[Depends] {node.name} -> {v.name}")
+                    self.file.write("\n")
+                    self.file.write(
+                        "//+" + v.text.decode("utf-8").replace("\n", "\n//+")
+                    )
+                    self.file.write("\n")
+        self.file.write("//|" + src_node.text.decode("utf-8").replace("\n", "\n//|"))
         self.file.write("\n")
         self.file.write(parsed.root.text.decode("utf-8"))
         self.file.write("\n")
 
     def visit(self, node: Node) -> Any:
-        if node.type == "translation_unit" and node.depend_store:
-            depends = node.depend_store.get_current_version()
-            if "include_files" in depends:
-                for include in depends["include_files"]:
-                    write_graph(include, self.file_name)
+        # if node.type == "translation_unit" and node.depend_store:
+        #     depends = node.depend_store.get_current_version()
+        #     if "include_files" in depends:
+        #         for include in depends["include_files"]:
+        #             write_graph(include, self.file_name)
 
-        if node.type in ["class_specifier", "struct_specifier"]:
+        if node.type in ["class_specifier", "struct_specifier"] and node.slice_store:
             assert node.slice_store
             depend = node.slice_store.get_current_version()
             data_node = depend["data"]

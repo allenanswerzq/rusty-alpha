@@ -44,8 +44,23 @@ class Analyzer(Visitor):
             return ty.text.decode("utf-8")
 
     def resolve_depend(self, name):
-        assert len(self.curr_node) > 0
+        assert len(self.curr_node) > 0, name
         cur = self.curr_node[-1]
+        # get the parent node which has a name associated with it
+        parent = cur
+        while parent:
+            if parent.type in [
+                "function_definition",
+                "class_specifier",
+                "struct_specifier",
+                "enum_specifier",
+            ]:
+                break
+            parent = parent.parent
+        cur = parent
+        assert cur, self.curr_node[-1].text
+        assert cur.name, cur.text
+
         if cur.depend_store is None:
             cur.depend_store = Store()
         depend_nodes = self.g.resolve_name(name, cur)
@@ -53,7 +68,9 @@ class Analyzer(Visitor):
         for depend_node in depend_nodes:
             if depend_node.id == cur.id:
                 continue
-            log.debug(f"{cur.name} depends `{depend_node.name}'")
+            log.debug(
+                f"{cur.name}:{cur.id} depends `{depend_node.name}:{depend_node.id}'"
+            )
             cur.depend_store.append_version({name: depend_node})
 
     def visit_field_declaration(self, node: Node) -> Any:
@@ -62,7 +79,7 @@ class Analyzer(Visitor):
 
         ty = self.query_custom_type(node)
         if ty:
-            # log.debug(f"analyze field decl {node.text}")
+            log.debug(f"analyze field decl {node.text.decode('utf-8')}")
             self.resolve_depend(ty)
 
     def visit_declaration(self, node: Node) -> Any:
@@ -71,6 +88,7 @@ class Analyzer(Visitor):
     def visit_call_expression(self, node: Node) -> Any:
         call = node.text.decode("utf-8").split("(")[0]
         assert len(self.curr_node) > 0
+        # log.debug(f"resolving {call} {self.curr_node[-1].text}")
         self.resolve_depend(call)
 
     def visit_preproc_ifdef(self, node: Node) -> Any:
@@ -81,7 +99,10 @@ class Analyzer(Visitor):
         pass
 
     def visit_struct_specifier(self, node: Node) -> Any:
-        self.visit_class_specifier(node)
+        self.depends = []
+        self.curr_node.append(node)
+        self.visit(node)
+        self.curr_node.pop()
 
     def visit_field_declaration_list(self, node: Node) -> Any:
         self.visit(node)
@@ -102,8 +123,10 @@ class Analyzer(Visitor):
             name = node.name.split(".")[-3]
             if node.depend_store is None:
                 node.depend_store = Store()
-            depend_nodes = self.g.resolve_name(name, node)
+            depend_nodes = self.g.resolve_name(name, node, allow_same_level=False)
             for depend_node in depend_nodes:
+                if depend_node.id == node.id:
+                    continue
                 log.debug(f"{node.name} depends `{depend_node.name}'")
                 node.depend_store.append_version({name: depend_node})
 

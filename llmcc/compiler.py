@@ -63,16 +63,16 @@ class Compiler(Visitor):
             node.code_store = Store()
         assert parsed
         parsed = parse(parsed.target_code, lan=Language(tree_sitter_rust.language()))
-        node.code_store.add_version({"parsed": parsed, "source_code": node})
+        node.code_store.add_version({"parsed": parsed, "src_node": node})
 
     def visit(self, node: Node) -> Any:
-        if node.type == "translation_unit" and node.depend_store:
-            depends = node.depend_store.get_current_version()
-            if "include_files" in depends:
-                for include in depends["include_files"]:
-                    slice_graph(include)
-                    compile_graph(include)
-                    # self.compile(include.root)
+        # if node.type == "translation_unit" and node.depend_store:
+        #     depends = node.depend_store.get_current_version()
+        #     if "include_files" in depends:
+        #         for include in depends["include_files"]:
+        #             slice_graph(include)
+        #             compile_graph(include)
+        #             # self.compile(include.root)
 
         for child in node.children:
             if hasattr(self, f"visit_{child.type}"):
@@ -91,16 +91,16 @@ class Compiler(Visitor):
         self.compile(node)
 
     def visit_class_specifier(self, node: Node) -> Any:
-        assert node.slice_store
-        depend = node.slice_store.get_current_version()
-        data_node = depend["data"]
-        func_nodes = depend["func"]
-        assert data_node or func_nodes
-        if data_node:
-            self.compile(data_node)
-        if func_nodes:
-            for f, v in func_nodes.items():
-                self.compile(v)
+        if node.slice_store:
+            depend = node.slice_store.get_current_version()
+            data_node = depend["data"]
+            func_nodes = depend["func"]
+            assert data_node or func_nodes
+            if data_node:
+                self.compile(data_node)
+            if func_nodes:
+                for f, v in func_nodes.items():
+                    self.compile(v)
 
     def visit_function_definition(self, node: Node) -> Any:
         self.compile(node)

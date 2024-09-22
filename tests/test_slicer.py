@@ -12,53 +12,75 @@ class TestSlicer(unittest.TestCase):
     @parse_doc()
     def test_query(self, g):
         """
-        namespace Slicer {
-            enum Color {RED, BLACK, DOUBLE_BLACK};
+//
+// Copied from here: https://github.com/anandarao/Red-Black-Tree
+//
 
-            class Foo {
-                static const int var = 2;
-                // define a
-                int *a;
-                Color b;
-                int c;
-                void * f = int(a, b);
+#ifndef RED_BLACK_TREE_RBTREE_H
+#define RED_BLACK_TREE_RBTREE_H
 
-                // function declarator
-                void bar();
+enum Color {RED, BLACK, DOUBLE_BLACK};
 
-                int another_func(Foo *c, char* w) {
-                    return *c.c + 2 + *w;
-                }
+struct Node
+{
+    int data;
+    int color;
+    Node *left, *right, *parent;
 
-                inline int sum(int a) {
-                    Color e;
-                    Bar w;
-                    return e + another_func(&c) + 2 + a;
-                }
+    explicit Node(int);
+};
 
-                class Bar {
-                    Color d;
-                    int e;
+class RBTree
+{
+    private:
+        Node *root;
+    protected:
+        void rotateLeft(Node *&);
+        void rotateRight(Node *&);
+        void fixInsertRBTree(Node *&);
+        void fixDeleteRBTree(Node *&);
+        void inorderBST(Node *&);
+        void preorderBST(Node *&);
+        int getColor(Node *&);
+        void setColor(Node *&, int);
+        Node *minValueNode(Node *&);
+        Node *maxValueNode(Node *&);
+        Node* insertBST(Node *&, Node *&);
+        Node* deleteBST(Node *&, int);
+        int getBlackHeight(Node *);
+    public:
+        RBTree();
+        void insertValue(int);
+        void deleteValue(int);
+        void merge(RBTree);
+        void inorder();
+        void preorder();
+};
 
-                    int bzz() {
-                        return d + 2;
-                    }
-                };
 
-            };
+#endif //RED_BLACK_TREE_RBTREE_H//
+// Red Black Tree Implementation
+//
+#include <bits/stdc++.h>
+#include "rb.h"
+using namespace std;
 
-            class ABC {
-                int a, b, c;
-            };
+Node::Node(int data) {
+    this->data = data;
+    color = RED;
+    left = right = parent = nullptr;
+}
 
-            void Foo::bar() {
-                printf("hello");
-            }
-        }
+RBTree::RBTree() {
+    root = nullptr;
+}
 
-        class DCE {
-            int d, c, e;
-        };
+int RBTree::getColor(Node *&node) {
+    if (node == nullptr)
+        return BLACK;
+
+    return node->color;
+}
         """
         print_graph(g)
         slice_graph(g)

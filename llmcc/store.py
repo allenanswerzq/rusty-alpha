@@ -19,7 +19,7 @@ class Store(BaseModel):
 
     def get_version(self, version: int) -> Dict[str, Any]:
         if version not in self.versions:
-            raise ValueError("Version {version} of data not exist before.")
+            raise ValueError(f"Version {version} of data not exist before.")
         return self.versions.get(version, {})
 
     def get_current_version(self) -> Dict[str, Any]:
