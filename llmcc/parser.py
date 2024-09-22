@@ -4,6 +4,7 @@ from tree_sitter import Language, Parser
 from tree_sitter import Node as TsNode
 from llmcc.ir import *
 from llmcc.config import *
+from llmcc.assigner import assign_name_graph
 
 CPP_LANGUAGE = Language(tscpp.language())
 

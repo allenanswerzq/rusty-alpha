@@ -6,6 +6,7 @@ from tree_sitter import Node as TsNode
 from llmcc.ir import *
 from llmcc.parser import parse
 from llmcc.config import *
+from llmcc.assigner import *
 
 CPP_LANGUAGE = Language(tree_sitter_cpp.language())
 
