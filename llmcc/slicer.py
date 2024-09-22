@@ -164,6 +164,7 @@ class {parts[0]} {{
 }};
     """
     else:
+        # TODO: multpile levels of namespace
         code = f"""
 namespce {parts[0]} {{
     class {parts[1]} {{
@@ -171,7 +172,9 @@ namespce {parts[0]} {{
     }}
 }};
     """
-    return parse(code).root
+    root = parse(code).root
+    root.name = class_name
+    return root
 
 
 def collect_class_func(class_name, funcs) -> Dict[str, Node]:
@@ -188,6 +191,7 @@ def collect_class_func(class_name, funcs) -> Dict[str, Node]:
         {type} {class_name.replace('.', '::')}::{para} {stmt}
         """
         node = parse(text).root
+        node.name = f"{class_name}.{para}"
         for j in range(0, 100):
             # TOOD: use paramter type to unique the override function
             override = f"{class_name}.{name}.{j}"

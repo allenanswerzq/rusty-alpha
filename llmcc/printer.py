@@ -48,6 +48,7 @@ class Writer(Visitor):
                         "//+" + v.text.decode("utf-8").replace("\n", "\n//+")
                     )
                     self.file.write("\n")
+                    self.file.write("//+-------------------------------------------\n")
         self.file.write("//|" + src_node.text.decode("utf-8").replace("\n", "\n//|"))
         self.file.write("\n")
         self.file.write(parsed.root.text.decode("utf-8"))

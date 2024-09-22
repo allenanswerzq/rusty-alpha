@@ -170,6 +170,7 @@ class Assigner(Visitor):
             elif child.type == "parameter_list":
                 for sub in child.children:
                     identifier = self.query_identifier(sub)
+                    # TODO: bug here, need to fix it
                     if identifier:
                         if len(param) > 0:
                             param += ", "
@@ -179,6 +180,7 @@ class Assigner(Visitor):
                             .replace(" ", "")
                             .strip()
                         )
+                        # log.warn(f"{node.text} {param} {identifier}")
             elif child.type == "identifier":
                 assert False, node.parent.type
             else:
