@@ -1,5 +1,9 @@
+import re
+import tree_sitter_cpp
+
 from tree_sitter import Node as TsNode
 from tree_sitter import Tree as TsTree
+from tree_sitter import Language, Parser
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Dict, Any, Optional, Tuple, Union, Type, List
 from abc import ABC, abstractmethod
@@ -89,6 +93,11 @@ class Graph(BaseModel):
     def accept(self, visitor: "Visitor") -> Any:
         return visitor.visit(self.root)
 
+    def resolve_name(self, name: str, cur: Node) -> Node:
+        """Given a name resolve the node in the lowest scope."""
+
+        pass
+
 
 _id = 0
 
@@ -107,20 +116,62 @@ class Assigner(Visitor):
         self.name = []
         self.g = g
 
-    def visit(self, node: Node) -> Any:
+    def visit(self, node: Node, continue_down=False) -> Any:
         for child in node.children:
             if hasattr(self, f"visit_{child.type}"):
                 getattr(self, f"visit_{child.type}")(child)
+
+            elif continue_down:
+                self.visit(child, continue_down=continue_down)
+
+    def query_identifier(self, node: Node):
+        query = Language(tree_sitter_cpp.language()).query(
+            """
+        (identifier) @identifier
+        """
+        )
+        capture = query.captures(node.ts_node)
+        if "identifier" in capture:
+            ty = capture["identifier"][0]
+            return ty.text.decode("utf-8")
+
+    def function_name(self, node) -> str:
+        assert node.type == "function_declarator"
+        param = ""
+        for child in node.children:
+            if child.type == "qualified_identifier":
+                name = child.text.decode("utf-8").replace("::", ".")
+            elif child.type == "field_identifier":
+                name = child.text.decode("utf-8")
+            elif child.type == "parameter_list":
+                for sub in child.children:
+                    identifier = self.query_identifier(sub)
+                    if identifier:
+                        if len(param) > 0:
+                            param += ", "
+                        param += (
+                            sub.text.decode("utf-8")
+                            .replace(identifier, "")
+                            .replace(" ", "")
+                            .strip()
+                        )
+            else:
+                assert False
+
+        assert len(name), node.parent.text
+        if len(param) > 0:
+            name += ".(" + param + ")"
+        return name
 
     def assign_name(self, node):
         if node.parent.name:
             self.g.node_map.pop(node.parent.name)
 
-        name = node.text.decode("utf-8").replace("::", ".")
+        name = node.text.decode("utf-8")
         if node.type == "function_declarator":
-            name = name.split("(")[0]
+            name = self.function_name(node)
 
-        node.parent.name = ".".join(self.name + [name]) 
+        node.parent.name = ".".join(self.name + [name])
 
         self.g.node_map[node.parent.name] = node.id
         self.name.append(name)
@@ -138,24 +189,17 @@ class Assigner(Visitor):
         pass
 
     def visit_field_identifier(self, node: Node) -> Any:
-        # self.assign_name(node)
         pass
 
-    def visit_declaration_list(self, node: Node) -> Any:
-        self.visit(node)
-
     def visit_namespace_definition(self, node: Node) -> Any:
-        self.visit(node)
+        self.visit(node, continue_down=True)
         self.name.pop()
 
     def visit_preproc_ifdef(self, node: Node) -> Any:
-        self.visit(node)
+        self.visit(node, continue_down=True)
 
     def visit_struct_specifier(self, node: Node) -> Any:
         self.visit_class_specifier(node)
-
-    def visit_field_declaration_list(self, node: Node) -> Any:
-        self.visit(node)
 
     def visit_enum_specifier(self, node: Node) -> Any:
         self.visit(node)
@@ -172,7 +216,7 @@ class Assigner(Visitor):
                 self.name.pop()
 
     def visit_class_specifier(self, node: Node) -> Any:
-        self.visit(node)
+        self.visit(node, continue_down=True)
         self.name.pop()
 
 

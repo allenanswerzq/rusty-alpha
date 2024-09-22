@@ -7,6 +7,12 @@ class Store(BaseModel):
     versions: Dict[int, Dict[str, Any]] = Field(default_factory=dict)
     current_version: int = 0
 
+    def append_version(self, data: Dict[str, Any]):
+        if len(self.list_versions()) == 0:
+            self.add_version(data)
+        else:
+            self.versions[self.current_version].update(data)
+
     def add_version(self, data: Dict[str, Any]):
         self.current_version += 1
         self.versions[self.current_version] = data

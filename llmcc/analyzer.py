@@ -14,15 +14,17 @@ CPP_LANGUAGE = Language(tree_sitter_cpp.language())
 class Analyzer(Visitor):
     """Analysis the dependency for a class or function."""
 
-    def __init__(self):
-        self.depends = None
-        self.name = None
-        pass
+    def __init__(self, g):
+        self.curr_node = []
+        self.g = g
 
-    def visit(self, node: Node) -> Any:
+    def visit(self, node: Node, continue_down=False) -> Any:
         for child in node.children:
             if hasattr(self, f"visit_{child.type}"):
                 getattr(self, f"visit_{child.type}")(child)
+
+            elif continue_down:
+                self.visit(child, continue_down=continue_down)
 
     def visit_declaration_list(self, node: Node) -> Any:
         self.visit(node)
@@ -44,8 +46,19 @@ class Analyzer(Visitor):
     def visit_field_declaration(self, node: Node) -> Any:
         ty = self.query_custom_type(node)
         if ty:
-            log.debug(f"{self.name} depends {ty}")
-            self.depends.append(ty)
+            assert len(self.curr_node) > 0
+            cur = self.curr_node[-1]
+            if cur.depends_store is None:
+                cur.depends_store = Store()
+            depend_node = self.g.resolve_name(ty, cur)
+            log.debug(f"{cur.name} depends `{ty}'")
+            cur.depends_store.append_version({ty: depend_node})
+
+    def visit_declaration(self, node: Node) -> Any:
+        self.visit_field_declaration(node)
+
+    def visit_call_expression(self, node: Node) -> Any:
+        log.debug(node.text)
 
     def visit_preproc_ifdef(self, node: Node) -> Any:
         self.visit(node)
@@ -57,21 +70,21 @@ class Analyzer(Visitor):
     def visit_struct_specifier(self, node: Node) -> Any:
         self.visit_class_specifier(node)
 
-    def visit_declaration(self, node: Node) -> Any:
-        pass
-
     def visit_field_declaration_list(self, node: Node) -> Any:
         self.visit(node)
 
     def visit_class_specifier(self, node: Node) -> Any:
         self.depends = []
-        self.name = node.name
+        self.curr_node.append(node)
         self.visit(node)
+        self.curr_node.pop()
 
     def visit_function_definition(self, node: Node) -> Any:
-        pass
+        self.curr_node.append(node)
+        self.visit(node, continue_down=True)
+        self.curr_node.pop()
 
 
 def analysis_graph(g: Graph) -> Any:
-    analyzer = Analyzer()
+    analyzer = Analyzer(g)
     return g.accept(analyzer)

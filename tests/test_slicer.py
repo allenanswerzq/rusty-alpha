@@ -25,12 +25,18 @@ class TestSlicer(unittest.TestCase):
                 // function declarator
                 void bar();
 
-                inline int sum() {
+                int another_func(int c) {
                     return c + 2;
                 }
 
+                inline int sum() {
+                    Color e;
+                    Bar w;
+                    return e + another_func(c) + 2;
+                }
+
                 class Bar {
-                    int d;
+                    Color d;
                     int e;
 
                     int bzz() {
