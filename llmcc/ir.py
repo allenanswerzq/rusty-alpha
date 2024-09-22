@@ -170,8 +170,10 @@ class Assigner(Visitor):
                             .replace(" ", "")
                             .strip()
                         )
+            elif child.type == "identifier":
+                assert False, node.parent.type
             else:
-                assert False
+                assert False, child.text
 
         assert len(name), node.parent.text
         if len(param) > 0:
@@ -202,6 +204,9 @@ class Assigner(Visitor):
     def visit_type_identifier(self, node: Node) -> Any:
         self.assign_name(node)
 
+    def visit_declaration(self, node: Node) -> Any:
+        pass
+
     def visit_identifier(self, node: Node) -> Any:
         pass
 
@@ -216,7 +221,8 @@ class Assigner(Visitor):
         self.visit(node, continue_down=True)
 
     def visit_struct_specifier(self, node: Node) -> Any:
-        self.visit_class_specifier(node)
+        self.visit(node, continue_down=True)
+        self.name.pop()
 
     def visit_enum_specifier(self, node: Node) -> Any:
         self.visit(node)

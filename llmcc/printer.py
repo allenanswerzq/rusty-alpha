@@ -51,8 +51,8 @@ class Writer(Visitor):
                     write_graph(include, self.file_name)
 
         if node.type in ["class_specifier", "struct_specifier"]:
-            assert node.depend_store
-            depend = node.depend_store.get_current_version()
+            assert node.slice_store
+            depend = node.slice_store.get_current_version()
             data_node = depend["data"]
             func_nodes = depend["func"]
             assert data_node or func_nodes

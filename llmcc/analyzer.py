@@ -1,7 +1,7 @@
 from llmcc.ir import *
 from llmcc.config import *
 from llmcc.parser import parse
-from llmcc.slicer import slice_graph
+from llmcc.slicer import is_field_func_declarator, is_field_class_declarator
 
 from pydantic import BaseModel, Field
 from tree_sitter import Language, Parser
@@ -51,12 +51,18 @@ class Analyzer(Visitor):
         depend_nodes = self.g.resolve_name(name, cur)
         # assert len(depend_nodes) > 0
         for depend_node in depend_nodes:
+            if depend_node.id == cur.id:
+                continue
             log.debug(f"{cur.name} depends `{depend_node.name}'")
             cur.depend_store.append_version({name: depend_node})
 
     def visit_field_declaration(self, node: Node) -> Any:
+        if is_field_func_declarator(node) or is_field_class_declarator(node):
+            return
+
         ty = self.query_custom_type(node)
         if ty:
+            # log.debug(f"analyze field decl {node.text}")
             self.resolve_depend(ty)
 
     def visit_declaration(self, node: Node) -> Any:
@@ -92,15 +98,14 @@ class Analyzer(Visitor):
         self.curr_node.pop()
 
         # if this function inside a class, it should also depends on this class
-        if len(node.name.split('.')) >= 3:
-            name = node.name.split('.')[-3]
+        if len(node.name.split(".")) >= 3:
+            name = node.name.split(".")[-3]
             if node.depend_store is None:
                 node.depend_store = Store()
             depend_nodes = self.g.resolve_name(name, node)
             for depend_node in depend_nodes:
                 log.debug(f"{node.name} depends `{depend_node.name}'")
                 node.depend_store.append_version({name: depend_node})
-
 
 
 def analyze_graph(g: Graph) -> Any:
