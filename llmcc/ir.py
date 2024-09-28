@@ -67,6 +67,13 @@ class Node(BaseModel):
     def child_by_field_name(self, name: str) -> Any:
         return self.ts_node.child_by_field_name(name)
 
+    def is_complex_type(self) -> bool:
+        return self.type in [
+            "class_specifier",
+            "struct_specifier",
+            "enum_specifier",
+        ]
+
 
 class Visitor(ABC):
 

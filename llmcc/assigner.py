@@ -25,7 +25,6 @@ class Assigner(Visitor):
             return Node(ts_node=ty).text
 
     def get_function_name(self, node) -> str:
-        # assert node.type == "function_declarator"
         param = ""
         name = ""
         for child in node.children:
@@ -36,14 +35,10 @@ class Assigner(Visitor):
             elif child.type == "parameter_list":
                 for sub in child.children:
                     identifier = self.query_identifier(sub)
-                    # TODO: bug here, need to fix it
                     if identifier:
                         if len(param) > 0:
                             param += ", "
-                        param += (
-                            sub.text.replace(identifier, "").replace(" ", "").strip()
-                        )
-                        # log.warn(f"{node.text} {param} {identifier}")
+                        param += re.sub(identifier + "$", "", sub.text, count=1).strip()
             elif child.type == "identifier":
                 assert False, node.parent.type
             else:
@@ -64,15 +59,14 @@ class Assigner(Visitor):
         if parent.name:
             self.g.node_map.pop(parent.name)
 
-        full_name = name
+        qualified_name = name
         if len(self.scope) > 1:
             outer = self.scope[-2]
             assert outer.name
-            full_name = outer.name + "." + full_name
-        log.warn(full_name)
+            qualified_name = outer.name + "." + name
 
-        parent.name = full_name
-        self.g.node_map[full_name] = parent.id
+        parent.name = qualified_name
+        self.g.node_map[qualified_name] = parent.id
 
     def visit_namespace_identifier(self, node: Node) -> Any:
         self.assign_name(node.text)
@@ -84,11 +78,9 @@ class Assigner(Visitor):
         self.visit(node)
 
     def visit_type_identifier(self, node: Node) -> Any:
-        if node.parent.type in [
-            "class_specifier",
-            "struct_specifier",
-            "enum_specifier",
-        ]:
+        assert isinstance(node.parent, Node)
+        assert node.parent
+        if node.parent.is_complex_type():
             self.assign_name(node.text)
         else:
             pass
