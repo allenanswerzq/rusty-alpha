@@ -44,7 +44,7 @@ class Node(BaseModel):
 
     @property
     def text(self) -> str:
-        return self.ts_node.text if self.ts_node else None
+        return self.ts_node.text.decode("utf-8") if self.ts_node else None
 
     @property
     def is_named(self) -> bool:
@@ -87,6 +87,9 @@ class Graph(BaseModel):
     )
     id_map: Dict[int, Node] = Field(default=None, description="map node it to node")
     tree: TsTree = Field(default=None, description="ts tree")
+    global_vars: Dict[str, Node] = Field(
+        default=None, description="global variable map"
+    )
 
     # def __str__(self):
     #     return str(self.root.ts_node).replace("(", "\n(")

@@ -39,7 +39,7 @@ class Includer(Visitor):
         self.visit(node)
 
     def visit_preproc_include(self, node: Node):
-        include_file = node.children[1].text.decode("utf-8")
+        include_file = node.children[1].text
         include_file = search_file(self.dir, include_file.replace('"', ""))
         if include_file is None:
             return None

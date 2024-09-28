@@ -155,7 +155,7 @@ def is_field_class_declarator(node: TsNode | Node):
 def collect_class_data(class_name, fields) -> Node:
     if len(fields) == 0:
         return None
-    fields_text = "\n".join("    " + field.text.decode("utf-8") for field in fields)
+    fields_text = "\n".join("    " + Node(ts_node=field).text for field in fields)
     parts = class_name.split(".")
     assert len(parts) in [1, 2]
     if len(parts) == 1:
@@ -183,11 +183,11 @@ def collect_class_func(class_name, funcs) -> Dict[str, Node]:
         return None
     func_text = {}
     for f in funcs:
-        type = f.child_by_field_name("type").text.decode("utf-8")
+        type = f.child_by_field_name("type").text
         d = f.child_by_field_name("declarator")
-        stmt = f.child_by_field_name("body").text.decode("utf-8")
-        name = d.child_by_field_name("declarator").text.decode("utf-8")
-        para = d.text.decode("utf-8")
+        stmt = f.child_by_field_name("body").text
+        name = d.child_by_field_name("declarator").text
+        para = d.text
         text = f"""
         {type} {class_name.replace('.', '::')}::{para} {stmt}
         """

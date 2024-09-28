@@ -14,7 +14,7 @@ CPP_LANGUAGE = Language(tree_sitter_cpp.language())
 class Analyzer(Visitor):
     """Analysis the dependency for a class or function."""
 
-    def __init__(self, g):
+    def __init__(self, g: Graph):
         self.curr_node = []
         self.g = g
 
@@ -41,7 +41,7 @@ class Analyzer(Visitor):
         capture = query.captures(node.ts_node)
         if "type_identifier" in capture:
             ty = capture["type_identifier"][0]
-            return ty.text.decode("utf-8")
+            return ty.text
 
     def resolve_depend(self, cur, name, allow_same_level=True):
         # get the parent node which has a name associated with it
@@ -89,7 +89,7 @@ class Analyzer(Visitor):
         self.visit_field_declaration(node)
 
     def visit_call_expression(self, node: Node) -> Any:
-        call = node.text.decode("utf-8").split("(")[0]
+        call = node.text.split("(")[0]
         assert len(self.curr_node) > 0
         # log.debug(f"resolving {call} {self.curr_node[-1].text}")
         cur = self.curr_node[-1]

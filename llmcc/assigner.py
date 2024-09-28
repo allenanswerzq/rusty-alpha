@@ -5,7 +5,7 @@ from llmcc.ir import *
 class Assigner(Visitor):
 
     def __init__(self, g: Graph):
-        self.name = []
+        self.scope = []
         self.g = g
 
     def visit(self, node: Node) -> Any:
@@ -22,7 +22,7 @@ class Assigner(Visitor):
         capture = query.captures(node.ts_node)
         if "identifier" in capture:
             ty = capture["identifier"][0]
-            return ty.text.decode("utf-8")
+            return Node(ts_node=ty).text
 
     def get_function_name(self, node) -> str:
         # assert node.type == "function_declarator"
@@ -30,9 +30,9 @@ class Assigner(Visitor):
         name = ""
         for child in node.children:
             if child.type == "qualified_identifier":
-                name = child.text.decode("utf-8").replace("::", ".")
+                name = child.text.replace("::", ".")
             elif child.type == "field_identifier":
-                name = child.text.decode("utf-8")
+                name = child.text
             elif child.type == "parameter_list":
                 for sub in child.children:
                     identifier = self.query_identifier(sub)
@@ -41,10 +41,7 @@ class Assigner(Visitor):
                         if len(param) > 0:
                             param += ", "
                         param += (
-                            sub.text.decode("utf-8")
-                            .replace(identifier, "")
-                            .replace(" ", "")
-                            .strip()
+                            sub.text.replace(identifier, "").replace(" ", "").strip()
                         )
                         # log.warn(f"{node.text} {param} {identifier}")
             elif child.type == "identifier":
@@ -59,47 +56,29 @@ class Assigner(Visitor):
             name += ".()"
         return name
 
-    def assign_name(self, node):
-        parent = node
-        while parent:
-            if parent.type in ["class_specifier", "struct_specifier", "enum_specifier"]:
-                break
-            parent = parent.parent
+    def assign_name(self, name):
+        assert len(self.scope) > 0
+        # The node which a name should exist
+        parent = self.scope[-1]
 
         if parent.name:
-            # log.warn(f"trying to assign same name {parent.name} twice")
             self.g.node_map.pop(parent.name)
 
-        name = node.text.decode("utf-8")
-        full_name = ".".join(self.name + [name])
-        parent.name = full_name
-        # log.warn(f"assign class {full_name} --> {parent.id}")
-        self.g.node_map[full_name] = parent.id
-        self.name.append(name)
+        full_name = name
+        if len(self.scope) > 1:
+            outer = self.scope[-2]
+            assert outer.name
+            full_name = outer.name + "." + full_name
+        log.warn(full_name)
 
-    def assign_func_name(self, node):
-        parent = node
-        while parent:
-            if parent.type in ["function_definition"]:
-                break
-            parent = parent.parent
-
-        if parent.name:
-            # log.warn(f"trying to assign same name {parent.name} twice")
-            self.g.node_map.pop(parent.name)
-
-        name = self.get_function_name(node)
-        full_name = ".".join(self.name + [name])
-        # log.warn(f"assign func {full_name} --> {parent.id}")
         parent.name = full_name
         self.g.node_map[full_name] = parent.id
-        self.name.append(name)
 
     def visit_namespace_identifier(self, node: Node) -> Any:
-        self.assign_name(node)
+        self.assign_name(node.text)
 
     def visit_function_declarator(self, node: Node) -> Any:
-        self.assign_func_name(node)
+        self.assign_name(self.get_function_name(node))
 
     def visit_pointer_declarator(self, node: Node) -> Any:
         self.visit(node)
@@ -110,7 +89,7 @@ class Assigner(Visitor):
             "struct_specifier",
             "enum_specifier",
         ]:
-            self.assign_name(node)
+            self.assign_name(node.text)
         else:
             pass
             # funciton like: Node* func() {}
@@ -126,33 +105,35 @@ class Assigner(Visitor):
         pass
 
     def visit_namespace_definition(self, node: Node) -> Any:
+        self.scope.append(node)
         self.visit(node)
-        self.name.pop()
+        self.scope.pop()
 
     def visit_preproc_ifdef(self, node: Node) -> Any:
         self.visit(node)
 
     def visit_struct_specifier(self, node: Node) -> Any:
+        self.scope.append(node)
         self.visit(node)
-        self.name.pop()
+        self.scope.pop()
 
     def visit_enum_specifier(self, node: Node) -> Any:
+        self.scope.append(node)
         self.visit(node)
-        self.name.pop()
+        self.scope.pop()
 
     def visit_function_definition(self, node: Node) -> Any:
+        self.scope.append(node)
         self.visit(node)
-        self.name.pop()
+        self.scope.pop()
 
     def visit_field_declaration(self, node: Node) -> Any:
-        for child in node.children:
-            if child.type == "class_specifier":
-                self.visit(child)
-                self.name.pop()
+        self.visit(node)
 
     def visit_class_specifier(self, node: Node) -> Any:
+        self.scope.append(node)
         self.visit(node)
-        self.name.pop()
+        self.scope.pop()
 
     def visit_declaration_list(self, node: Node) -> Any:
         self.visit(node)

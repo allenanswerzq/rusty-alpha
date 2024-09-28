@@ -31,7 +31,7 @@ class Compiler(Visitor):
     @ell.mock(model="gpt-4-turbo", mock_func=mock_func)
     def compile_impl(self, node: Node):
         schema = json.dumps(Data.model_json_schema(), indent=4)
-        code = node.text.decode("utf-8")
+        code = node.text
         return [
             ell.system(
                 f"""
@@ -73,6 +73,8 @@ class Compiler(Visitor):
         node.code_store.add_version({"parsed": parsed, "src_node": node})
 
     def visit(self, node: Node) -> Any:
+        # TODO: add a new function to compile the depend files first if not done before
+        # add a new .llmccache to save the intermidiate files
         # if node.type == "translation_unit" and node.depend_store:
         #     depends = node.depend_store.get_current_version()
         #     if "include_files" in depends:

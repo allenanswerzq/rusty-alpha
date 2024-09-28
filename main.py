@@ -22,7 +22,7 @@ def main(source, include_dir, output):
     g = parse_from_file(source)
     g = include_graph(g, include_dir)
     # with open(output + ".cpp", "w") as f:
-    #     f.write(g.root.text.decode("utf-8"))
+    #     f.write(g.root.)
     # print_graph(g)
     slice_graph(g)
     analyze_graph(g)

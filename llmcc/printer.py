@@ -9,7 +9,7 @@ class Printer(Visitor):
 
     def visit(self, node: Node) -> Any:
         if node.is_named:
-            text = node.text.decode("utf-8").replace("\n", "\\n").replace("  ", "")
+            text = node.text.replace("\n", "\\n").replace("  ", "")
             print(f"{'  ' * self.indent} ({node.type} {node.name} {node.id}: {text}")
         self.indent += 1
         for child in node.children:
@@ -44,14 +44,12 @@ class Writer(Visitor):
                 for k, v in depends.items():
                     self.file.write(f"//+[Depends] {node.name} -> {v.name}")
                     self.file.write("\n")
-                    self.file.write(
-                        "//+" + v.text.decode("utf-8").replace("\n", "\n//+")
-                    )
+                    self.file.write("//+" + v.text.replace("\n", "\n//+"))
                     self.file.write("\n")
                     self.file.write("//+-------------------------------------------\n")
-        self.file.write("//|" + src_node.text.decode("utf-8").replace("\n", "\n//|"))
+        self.file.write("//|" + src_node.text.replace("\n", "\n//|"))
         self.file.write("\n")
-        self.file.write(parsed.root.text.decode("utf-8"))
+        self.file.write(parsed.root.text)
         self.file.write("\n")
 
     def visit(self, node: Node) -> Any:
