@@ -5,13 +5,16 @@ from llmcc.ir import *
 class Assigner(Visitor):
 
     def __init__(self, g: Graph):
-        self.scope = []
+        self.scope = Scope()
         self.g = g
 
-    def visit(self, node: Node) -> Any:
+    def visit(self, node: Node, continue_down=False) -> Any:
         for child in node.children:
             if hasattr(self, f"visit_{child.type}"):
                 getattr(self, f"visit_{child.type}")(child)
+
+            if continue_down:
+                self.visit(child, continue_down=continue_down)
 
     def query_identifier(self, node: Node):
         query = Language(tree_sitter_cpp.language()).query(
@@ -40,9 +43,13 @@ class Assigner(Visitor):
                             param += ", "
                         param += re.sub(identifier + "$", "", sub.text, count=1).strip()
             elif child.type == "identifier":
-                assert False, node.parent.type
+                # assert False, node.text
+                # construct function like
+                # TODO: we should only have the signature, not the full definition
+                return node.text
             else:
-                assert False, child.text
+                # assert False, child.type
+                return node.text
 
         assert len(name), node.parent.text
         if len(param) > 0:
@@ -52,21 +59,22 @@ class Assigner(Visitor):
         return name
 
     def assign_name(self, name):
-        assert len(self.scope) > 0
         # The node which a name should exist
-        parent = self.scope[-1]
+        root = self.scope.root
+        assert root
 
-        if parent.name:
-            self.g.node_map.pop(parent.name)
+        if root.name:
+            self.g.node_map.pop(root.name)
 
         qualified_name = name
-        if len(self.scope) > 1:
-            outer = self.scope[-2]
-            assert outer.name
-            qualified_name = outer.name + "." + name
+        if self.scope.parent:
+            outer = self.scope.parent.root
+            if outer:
+                assert outer.name, outer.text
+                qualified_name = outer.name + "." + name
 
-        parent.name = qualified_name
-        self.g.node_map[qualified_name] = parent.id
+        root.name = qualified_name
+        self.g.node_map[qualified_name] = root.id
 
     def visit_namespace_identifier(self, node: Node) -> Any:
         self.assign_name(node.text)
@@ -87,45 +95,44 @@ class Assigner(Visitor):
             # funciton like: Node* func() {}
             # log.warn(node.parent.ts_node)
 
-    def visit_declaration(self, node: Node) -> Any:
-        pass
-
     def visit_identifier(self, node: Node) -> Any:
-        pass
+        self.assign_name(node.text)
+
+    # -----------------------------------------------------------------------------------------
+    def assign_scope(self, node, continue_down=False):
+        self.scope = Scope(root=node, parent=self.scope)
+        self.visit(node, continue_down=continue_down)
+        self.scope = self.scope.parent
+
+    def visit_preproc_def(self, node: Node) -> Any:
+        self.assign_scope(node)
+
+    def visit_declaration(self, node: Node) -> Any:
+        self.assign_scope(node, continue_down=True)
 
     def visit_field_identifier(self, node: Node) -> Any:
         pass
 
     def visit_namespace_definition(self, node: Node) -> Any:
-        self.scope.append(node)
-        self.visit(node)
-        self.scope.pop()
+        self.assign_scope(node)
 
     def visit_preproc_ifdef(self, node: Node) -> Any:
         self.visit(node)
 
     def visit_struct_specifier(self, node: Node) -> Any:
-        self.scope.append(node)
-        self.visit(node)
-        self.scope.pop()
+        self.assign_scope(node)
 
     def visit_enum_specifier(self, node: Node) -> Any:
-        self.scope.append(node)
-        self.visit(node)
-        self.scope.pop()
+        self.assign_scope(node)
 
     def visit_function_definition(self, node: Node) -> Any:
-        self.scope.append(node)
-        self.visit(node)
-        self.scope.pop()
+        self.assign_scope(node)
 
     def visit_field_declaration(self, node: Node) -> Any:
         self.visit(node)
 
     def visit_class_specifier(self, node: Node) -> Any:
-        self.scope.append(node)
-        self.visit(node)
-        self.scope.pop()
+        self.assign_scope(node)
 
     def visit_declaration_list(self, node: Node) -> Any:
         self.visit(node)

@@ -74,6 +74,9 @@ class Node(BaseModel):
             "enum_specifier",
         ]
 
+    def is_function(self) -> bool:
+        return self.type in ["function_definition"]
+
 
 class Visitor(ABC):
 
@@ -84,6 +87,24 @@ class Visitor(ABC):
 
 class Context:
     pass
+
+
+class Scope:
+    def __init__(self, root=None, parent: "Scope" = None):
+        self.root = root
+        self.nodes = {}
+        self.parent = parent
+
+    def define(self, name, value):
+        self.nodes[name] = value
+
+    def resolve(self, name):
+        if name in self.nodes:
+            return self.nodes[name]
+        elif self.parent is not None:
+            return self.parent.resolve(name)
+        else:
+            raise NameError(f"Name '{name}' is not defined in this scope.")
 
 
 class Graph(BaseModel):
