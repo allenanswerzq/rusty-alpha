@@ -7,187 +7,108 @@ from llmcc.ir import *
 from llmcc.parser import parse
 from llmcc.config import *
 from llmcc.assigner import *
+from llmcc.scoper import ScopeVisitor
 
-CPP_LANGUAGE = Language(tree_sitter_cpp.language())
 
+class Slicer(ScopeVisitor):
 
-class Slicer(Visitor):
+    def __init__(self, g: Graph):
+        super().__init__(g)
+        self.data_fields = []
+        self.func_definitions = []
+        self.nested_classes = []
 
-    def __init__(self, g):
-        self.field_declarator = []
-        self.funtion_definition = []
-        self.nested_class_declarator = []
-        self.nested_class_global = []
-        self.g = g
+    def impl_struct_specifier(self, node: Node) -> Any:
+        self.impl_class_specifier(node)
 
-    def visit(self, node: Node) -> Any:
-        for child in node.children:
-            if hasattr(self, f"visit_{child.type}"):
-                getattr(self, f"visit_{child.type}")(child)
+    def impl_function_definition(self, node: Node) -> Any:
+        self.func_definitions.append(node)
 
-            if child.type in ["class_specifier", "struct_specifier"]:
-                n = len(self.nested_class_declarator)
-                self.nested_class_global.extend(self.nested_class_declarator)
-                for nest in self.nested_class_global[-n:]:
-                    parent = self.g.id_map[node.id]
-                    if parent.depend_store is None:
-                        parent.depend_store = Store()
-                    parent.depend_store.add_version({"nest_class": nest})
-                    self.visit_class_specifier(nest)
+    def impl_field_class_declarator(self, node) -> Any:
+        assert node.children[0].is_complex_type()
+        nest = node.children[0]
+        self.nested_classes.append(nest)
+        # This seems donsn't matter right now
+        # # change name after we move the nested class out
+        # self.g.node_map.pop(nest.name)
+        # parts = nest.name.split(".")
+        # parts.pop(-2)
+        # nest.name = ".".join(parts)
+        # self.g.node_map[nest.name] = nest.id
+        # # reassign all names below this node
+        # assigner = Assigner(self.g)
+        # parts.pop(-1)
+        # assigner.name = parts
+        # assigner.visit(node)
 
-    def visit_declaration_list(self, node: Node) -> Any:
-        for child in node.children:
-            self.visit(child)
+    def impl_field_data_declarator(self, node) -> Any:
+        self.data_fields.append(node)
 
-    def visit_namespace_definition(self, node: Node) -> Any:
-        for child in node.children:
-            self.visit(child)
-
-    def visit_preproc_ifdef(self, node: Node) -> Any:
-        self.visit(node)
-
-    def visit_struct_specifier(self, node: Node) -> Any:
-        self.visit_class_specifier(node)
-
-    def visit_field_declaration_list(self, node: Node) -> Any:
-        for child in node.children:
-            self.visit(child)
-
-    def visit_function_definition(self, node: Node) -> Any:
-        # log.debug(node.text)
-        # log.debug(node.rows)
-        self.funtion_definition.append(node)
-
-    def visit_field_declaration(self, node: Node) -> Any:
-        if is_field_func_declarator(node):
-            # NOTE: we dont need function decl because it will have a impl function in the cpp file
-            pass
-        elif is_field_class_declarator(node):
-            assert node.children[0].type == "class_specifier"
-            nest = node.children[0]
-            self.nested_class_declarator.append(nest)
-            # change name after we move the nested class out
-            self.g.node_map.pop(nest.name)
-            parts = nest.name.split(".")
-            parts.pop(-2)
-            nest.name = ".".join(parts)
-            self.g.node_map[nest.name] = nest.id
-            # reassign all names below this node
-            assigner = Assigner(self.g)
-            parts.pop(-1)
-            assigner.name = parts
-            assigner.visit(node)
-        else:
-            self.field_declarator.append(node.ts_node)
-
-    def visit_class_specifier(self, node: Node) -> Any:
-        self.field_declarator = []
-        self.funtion_definition = []
-        self.nested_class_declarator = []
+    def impl_class_specifier(self, node: Node) -> Any:
+        self.data_fields = []
+        self.func_definitions = []
+        self.nested_classes = []
 
         for child in node.children:
             self.visit(child)
 
-        class_name = node.name
-        data = collect_class_data(class_name, self.field_declarator)
-        func = collect_class_func(class_name, self.funtion_definition)
+        nested_class = self.nested_classes.copy()
+        data_fields = self.data_fields.copy()
+        func_definitions = self.func_definitions.copy()
+        for nest in nested_class:
+            self.impl_class_specifier(nest)
+
+        data = collect_class_data(self.scope, data_fields)
+        func = collect_class_func(self.scope, func_definitions)
+
         if data:
             log.debug(data.text)
         if func:
             for k, v in func.items():
                 log.debug(v.text)
+
         if node.slice_store is None:
             node.slice_store = Store()
         if data or func:
-            node.slice_store.add_version({"data": data, "func": func})
+            node.slice_store.add_version(
+                {"data": data, "func": func, "nest_classes": self.nested_classes}
+            )
 
 
 def slice_graph(g: Graph) -> Any:
-    compiler = Slicer(g)
-    return g.accept(compiler)
+    slicer = Slicer(g)
+    slicer.visit(g.root)
 
 
-def is_field_func_declarator(node: TsNode | Node):
-    query = CPP_LANGUAGE.query(
-        """
-    (
-    (field_declaration 
-        (_)
-        (function_declarator)
-    ) @field_declaration
-    )
-    (
-    (field_declaration 
-        (_)
-        (pointer_declarator
-            (function_declarator)
-        )
-    ) @field_declaration
-    )
-    """
-    )
-
-    if isinstance(node, Node):
-        node = node.ts_node
-
-    capture = query.captures(node)
-    return len(capture) > 0
+def collect_class_data(scope: Scope, fields) -> Node:
+    chain = scope.get_scope_chain()
+    text = ""
+    indent = 0
+    for sc in chain:
+        name = sc.root.name.split(".")[-1]
+        text += " " * indent + f"{sc.root.scope_str} {name} {{\n"
+        indent += 4
+    for field in fields:
+        text += " " * indent + field.text
+        text += "\n"
+    for sc in chain:
+        indent -= 4
+        text += " " * indent + "}\n"
+    assert indent == 0
+    return parse(text).root
 
 
-def is_field_class_declarator(node: TsNode | Node):
-    query = CPP_LANGUAGE.query(
-        """
-    (
-    (field_declaration 
-        (class_specifier)
-    ) @field_declaration
-    )
-    """
-    )
-
-    if isinstance(node, Node):
-        node = node.ts_node
-
-    capture = query.captures(node)
-    return len(capture) > 0
-
-
-def collect_class_data(class_name, fields) -> Node:
-    if len(fields) == 0:
-        return None
-    fields_text = "\n".join("    " + Node(ts_node=field).text for field in fields)
-    parts = class_name.split(".")
-    assert len(parts) in [1, 2]
-    if len(parts) == 1:
-        code = f"""
-class {parts[0]} {{
-{fields_text}
-}};
-    """
-    else:
-        # TODO: multpile levels of namespace
-        code = f"""
-namespce {parts[0]} {{
-    class {parts[1]} {{
-{fields_text}
-    }}
-}};
-    """
-    root = parse(code).root
-    root.name = class_name
-    return root
-
-
-def collect_class_func(class_name, funcs) -> Dict[str, Node]:
+def collect_class_func(scope, funcs) -> Dict[str, Node]:
     if len(funcs) == 0:
         return None
     func_text = {}
+    class_name = scope.root.name
     for f in funcs:
-        type = f.child_by_field_name("type").text
+        type = Node(ts_node=f.child_by_field_name("type")).text
         d = f.child_by_field_name("declarator")
-        stmt = f.child_by_field_name("body").text
-        name = d.child_by_field_name("declarator").text
-        para = d.text
+        stmt = Node(ts_node=f.child_by_field_name("body")).text
+        name = Node(ts_node=d.child_by_field_name("declarator")).text
+        para = Node(ts_node=d).text
         text = f"""
         {type} {class_name.replace('.', '::')}::{para} {stmt}
         """

@@ -18,10 +18,14 @@ class Printer(Visitor):
         return None
 
 
-def print_graph(g: Graph):
+def print_node(n: Node):
     print("\n")
     printer = Printer()
-    printer.visit(g.root)
+    printer.visit(n)
+
+
+def print_graph(g: Graph):
+    print_node(g.root)
 
 
 class Writer(Visitor):

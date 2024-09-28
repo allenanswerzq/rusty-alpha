@@ -64,6 +64,16 @@ class Node(BaseModel):
         e = self.end_point
         return e.row - s.row
 
+    @property
+    def scope_str(self) -> str:
+        scope_dict = {
+            "class_specifier": "class",
+            "struct_specifier": "struct",
+            "enum_specifier": "enum",
+            "namespace_definition": "namespace",
+        }
+        return scope_dict[self.type]
+
     def child_by_field_name(self, name: str) -> Any:
         return self.ts_node.child_by_field_name(name)
 
@@ -90,10 +100,11 @@ class Context:
 
 
 class Scope:
-    def __init__(self, root=None, parent: "Scope" = None):
+    def __init__(self, root=None, parent: "Scope" = None, child: "Scope" = None):
         self.root = root
         self.nodes = {}
         self.parent = parent
+        self.child = child
 
     def define(self, name, value):
         self.nodes[name] = value
@@ -105,6 +116,15 @@ class Scope:
             return self.parent.resolve(name)
         else:
             raise NameError(f"Name '{name}' is not defined in this scope.")
+
+    def get_scope_chain(self) -> List["Scope"]:
+        chain = [self]
+        start = self
+        while start.parent is not None:
+            start = start.parent
+            chain.append(start)
+        chain.pop()
+        return chain[::-1]
 
 
 class Graph(BaseModel):

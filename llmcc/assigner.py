@@ -1,6 +1,8 @@
 from llmcc.ir import *
 from llmcc.scoper import ScopeVisitor
 
+# from llmcc.util import get_function_signature
+
 
 # assign name to node
 class Assigner(ScopeVisitor):
@@ -19,7 +21,7 @@ class Assigner(ScopeVisitor):
             ty = capture["identifier"][0]
             return Node(ts_node=ty).text
 
-    def get_function_name(self, node) -> str:
+    def get_function_signature(self, node: Node) -> str:
         param = ""
         name = ""
         for child in node.children:
@@ -72,7 +74,7 @@ class Assigner(ScopeVisitor):
         self.assign_name(node.text)
 
     def visit_function_declarator(self, node: Node) -> Any:
-        self.assign_name(self.get_function_name(node))
+        self.assign_name(self.get_function_signature(node))
 
     def visit_pointer_declarator(self, node: Node) -> Any:
         self.visit(node)
@@ -93,19 +95,7 @@ class Assigner(ScopeVisitor):
     def visit_field_identifier(self, node: Node) -> Any:
         pass
 
-    def visit_preproc_ifdef(self, node: Node) -> Any:
-        self.visit(node)
-
-    def visit_field_declaration(self, node: Node) -> Any:
-        self.visit(node)
-
-    def visit_declaration_list(self, node: Node) -> Any:
-        self.visit(node)
-
-    def visit_field_declaration_list(self, node: Node) -> Any:
-        self.visit(node)
-
 
 def assign_name_graph(g: Graph):
     assigner = Assigner(g)
-    return g.accept(assigner)
+    assigner.visit(g.root)
