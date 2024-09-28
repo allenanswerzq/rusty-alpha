@@ -97,6 +97,9 @@ class ScopeVisitor(Visitor):
         # TODO: each should be in a new scope
         self.visit(node)
 
+    def visit_pointer_declarator(self, node: Node) -> Any:
+        self.visit(node)
+
     def impl_field_func_declarator(self, node) -> Any:
         pass
 

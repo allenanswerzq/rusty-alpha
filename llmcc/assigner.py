@@ -76,9 +76,6 @@ class Assigner(ScopeVisitor):
     def visit_function_declarator(self, node: Node) -> Any:
         self.assign_name(self.get_function_signature(node))
 
-    def visit_pointer_declarator(self, node: Node) -> Any:
-        self.visit(node)
-
     def visit_type_identifier(self, node: Node) -> Any:
         assert isinstance(node.parent, Node)
         assert node.parent
