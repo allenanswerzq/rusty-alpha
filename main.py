@@ -7,6 +7,7 @@ from llmcc.printer import write_graph, print_graph
 from llmcc.config import *
 from llmcc.includer import include_graph
 from llmcc.slicer import slice_graph
+from llmcc.analyzer import analyze_graph
 
 
 @click.command()
@@ -19,10 +20,12 @@ def main(source, include_dir, output):
 
     log.info(f"ai compiling {source}")
     g = parse_from_file(source)
-    include_graph(g, include_dir)
-    # log.debug(g.root.text.decode("utf-8"))
-    print_graph(g)
+    g = include_graph(g, include_dir)
+    # with open(output + ".cpp", "w") as f:
+    #     f.write(g.root.text.decode("utf-8"))
+    # print_graph(g)
     slice_graph(g)
+    analyze_graph(g)
     compile_graph(g)
     write_graph(g, output)
 

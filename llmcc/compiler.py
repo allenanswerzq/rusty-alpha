@@ -16,12 +16,19 @@ class Data(BaseModel):
     target_code: str = Field(description="target code generated.")
 
 
+def mock_func():
+    return f"""{{
+        "explain": "Mock",
+        "target_code": "fn mock() {{}}"
+    }}"""
+
+
 class Compiler(Visitor):
 
     def __init__(self):
         pass
 
-    @ell.simple(model="gpt-4-turbo")
+    @ell.mock(model="gpt-4-turbo", mock_func=mock_func)
     def compile_impl(self, node: Node):
         schema = json.dumps(Data.model_json_schema(), indent=4)
         code = node.text.decode("utf-8")
