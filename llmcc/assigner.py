@@ -1,20 +1,12 @@
 from llmcc.ir import *
+from llmcc.scoper import ScopeVisitor
 
 
 # assign name to node
-class Assigner(Visitor):
+class Assigner(ScopeVisitor):
 
     def __init__(self, g: Graph):
-        self.scope = Scope()
-        self.g = g
-
-    def visit(self, node: Node, continue_down=False) -> Any:
-        for child in node.children:
-            if hasattr(self, f"visit_{child.type}"):
-                getattr(self, f"visit_{child.type}")(child)
-
-            if continue_down:
-                self.visit(child, continue_down=continue_down)
+        super().__init__(g)
 
     def query_identifier(self, node: Node):
         query = Language(tree_sitter_cpp.language()).query(
@@ -98,41 +90,14 @@ class Assigner(Visitor):
     def visit_identifier(self, node: Node) -> Any:
         self.assign_name(node.text)
 
-    # -----------------------------------------------------------------------------------------
-    def assign_scope(self, node, continue_down=False):
-        self.scope = Scope(root=node, parent=self.scope)
-        self.visit(node, continue_down=continue_down)
-        self.scope = self.scope.parent
-
-    def visit_preproc_def(self, node: Node) -> Any:
-        self.assign_scope(node)
-
-    def visit_declaration(self, node: Node) -> Any:
-        self.assign_scope(node, continue_down=True)
-
     def visit_field_identifier(self, node: Node) -> Any:
         pass
-
-    def visit_namespace_definition(self, node: Node) -> Any:
-        self.assign_scope(node)
 
     def visit_preproc_ifdef(self, node: Node) -> Any:
         self.visit(node)
 
-    def visit_struct_specifier(self, node: Node) -> Any:
-        self.assign_scope(node)
-
-    def visit_enum_specifier(self, node: Node) -> Any:
-        self.assign_scope(node)
-
-    def visit_function_definition(self, node: Node) -> Any:
-        self.assign_scope(node)
-
     def visit_field_declaration(self, node: Node) -> Any:
         self.visit(node)
-
-    def visit_class_specifier(self, node: Node) -> Any:
-        self.assign_scope(node)
 
     def visit_declaration_list(self, node: Node) -> Any:
         self.visit(node)
