@@ -1,2 +1,4 @@
 *.pyc
 *.rsls
+third_party/ell
+*.egg-info
