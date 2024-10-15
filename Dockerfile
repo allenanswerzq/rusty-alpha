@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     # C++ development tools
     build-essential \
     g++ \
+    clang \
     cmake \
     make \
     ninja-build \
@@ -30,12 +31,6 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Set up Zsh and Prezto
-RUN chsh -s /usr/bin/zsh \
-    && git clone --recursive https://github.com/sorin-ionescu/prezto.git /root/.zprezto \
-    && zsh -c 'setopt EXTENDED_GLOB' \
-    && zsh -c 'for rcfile in /root/.zprezto/runcoms/^README.md(.N); do ln -s "$rcfile" "/root/.${rcfile:t}"; done'
-
 # Create and activate the virtual environment
 WORKDIR /root
 RUN python3 -m venv venv
@@ -50,9 +45,4 @@ WORKDIR /root/llmcc
 RUN /root/venv/bin/pip install --upgrade pip \
     && /root/venv/bin/pip install -r requirements.txt
 
-
-RUN echo "zstyle ':prezto:module:prompt' theme 'sorin'" >> /root/.zpreztorc
-
-
-# Start Zsh with Prezto
-CMD [ "zsh" ]
+CMD [ "/usr/bin/bash" ]

@@ -28,18 +28,6 @@ class Slicer(ScopeVisitor):
         assert node.children[0].is_complex_type()
         nest = node.children[0]
         self.nested_classes.append(nest)
-        # This seems donsn't matter right now
-        # # change name after we move the nested class out
-        # self.g.node_map.pop(nest.name)
-        # parts = nest.name.split(".")
-        # parts.pop(-2)
-        # nest.name = ".".join(parts)
-        # self.g.node_map[nest.name] = nest.id
-        # # reassign all names below this node
-        # assigner = Assigner(self.g)
-        # parts.pop(-1)
-        # assigner.name = parts
-        # assigner.visit(node)
 
     def impl_field_data_declarator(self, node) -> Any:
         self.data_fields.append(node)
@@ -62,10 +50,10 @@ class Slicer(ScopeVisitor):
         func = collect_class_func(self.scope, func_definitions)
 
         if data:
-            log.debug(data.text)
+            log.debug("\n" + data.text)
         if func:
             for k, v in func.items():
-                log.debug(v.text)
+                log.debug("\n" + v.text)
 
         if node.slice_store is None:
             node.slice_store = Store()
@@ -110,7 +98,7 @@ def collect_class_func(scope, funcs) -> Dict[str, Node]:
         name = Node(ts_node=d.child_by_field_name("declarator")).text
         para = Node(ts_node=d).text
         text = f"""
-        {type} {class_name.replace('.', '::')}::{para} {stmt}
+        {type} {class_name.replace('.', '::')}::{para} {stmt.rstrip()}
         """
         node = parse(text).root
         node.name = f"{class_name}.{para}"

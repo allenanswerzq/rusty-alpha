@@ -57,12 +57,6 @@ class Writer(Visitor):
         self.file.write("\n")
 
     def visit(self, node: Node) -> Any:
-        # if node.type == "translation_unit" and node.depend_store:
-        #     depends = node.depend_store.get_current_version()
-        #     if "include_files" in depends:
-        #         for include in depends["include_files"]:
-        #             write_graph(include, self.file_name)
-
         if node.type in ["class_specifier", "struct_specifier"] and node.slice_store:
             assert node.slice_store
             depend = node.slice_store.get_current_version()

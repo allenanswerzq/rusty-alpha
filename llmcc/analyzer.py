@@ -1,7 +1,7 @@
 from llmcc.ir import *
 from llmcc.config import *
 from llmcc.parser import parse
-from llmcc.slicer import is_field_func_declarator, is_field_class_declarator
+from llmcc.scoper import is_field_func_declarator, is_field_class_declarator
 
 from pydantic import BaseModel, Field
 from tree_sitter import Language, Parser
