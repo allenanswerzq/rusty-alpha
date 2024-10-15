@@ -38,6 +38,9 @@ class Writer(Visitor):
         self.file.close()
 
     def write(self, node):
+        if node.code_store is None:
+            return
+
         log.info(f"writing {node.type} {node.name}")
         store = node.code_store.get_current_version()
         parsed = store["parsed"]
@@ -57,16 +60,16 @@ class Writer(Visitor):
         self.file.write("\n")
 
     def visit(self, node: Node) -> Any:
-        if node.type in ["class_specifier", "struct_specifier"] and node.slice_store:
+        if node.is_class() and node.slice_store:
             assert node.slice_store
-            depend = node.slice_store.get_current_version()
-            data_node = depend["data"]
-            func_nodes = depend["func"]
+            slice = node.slice_store.get_current_version()
+            data_node = slice["data"]
+            func_nodes = slice["func"]
             assert data_node or func_nodes
-            if data_node:
+            if data_node is not None:
                 self.write(data_node)
-            if func_nodes:
-                for f, v in func_nodes:
+            if func_nodes is not None:
+                for f, v in func_nodes.items():
                     self.write(v)
 
         if node.code_store:

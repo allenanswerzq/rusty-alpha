@@ -91,6 +91,12 @@ class Node(BaseModel):
     def is_function(self) -> bool:
         return self.type in ["function_definition"]
 
+    def is_class(self) -> bool:
+        return self.type in [
+            "class_specifier",
+            "struct_specifier",
+        ]
+
 
 class Visitor(ABC):
 

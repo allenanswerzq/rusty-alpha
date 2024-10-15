@@ -6,6 +6,7 @@ from llmcc.ir import *
 from llmcc.config import *
 from llmcc.parser import parse
 from llmcc.slicer import slice_graph
+from llmcc.scoper import ScopeVisitor
 
 from pydantic import BaseModel, Field
 from tree_sitter import Language, Parser
@@ -23,10 +24,10 @@ def mock_func():
     }}"""
 
 
-class Compiler(Visitor):
+class Compiler(ScopeVisitor):
 
-    def __init__(self):
-        pass
+    def __init__(self, g: Graph):
+        super().__init__(g)
 
     @ell.mock(model="gpt-4-turbo", mock_func=mock_func)
     def compile_impl(self, node: Node):
@@ -72,38 +73,17 @@ class Compiler(Visitor):
         parsed = parse(parsed.target_code, lan=Language(tree_sitter_rust.language()))
         node.code_store.add_version({"parsed": parsed, "src_node": node})
 
-    def visit(self, node: Node) -> Any:
-        # TODO: add a new function to compile the depend files first if not done before
-        # add a new .llmccache to save the intermidiate files
-        # if node.type == "translation_unit" and node.depend_store:
-        #     depends = node.depend_store.get_current_version()
-        #     if "include_files" in depends:
-        #         for include in depends["include_files"]:
-        #             slice_graph(include)
-        #             compile_graph(include)
-        #             # self.compile(include.root)
+    def impl_struct_specifier(self, node: Node) -> Any:
+        self.impl_class_specifier(node)
 
-        for child in node.children:
-            if hasattr(self, f"visit_{child.type}"):
-                getattr(self, f"visit_{child.type}")(child)
-
-    def visit_preproc_ifdef(self, node: Node) -> Any:
-        self.visit(node)
-
-    def visit_enum_specifier(self, node: Node) -> Any:
+    def impl_declaration(self, node: Node) -> Any:
         self.compile(node)
 
-    def visit_struct_specifier(self, node: Node) -> Any:
-        self.visit_class_specifier(node)
-
-    def visit_declaration(self, node: Node) -> Any:
-        self.compile(node)
-
-    def visit_class_specifier(self, node: Node) -> Any:
+    def impl_class_specifier(self, node: Node) -> Any:
         if node.slice_store:
-            depend = node.slice_store.get_current_version()
-            data_node = depend["data"]
-            func_nodes = depend["func"]
+            slice = node.slice_store.get_current_version()
+            data_node = slice["data"]
+            func_nodes = slice["func"]
             assert data_node or func_nodes
             if data_node:
                 self.compile(data_node)
@@ -111,10 +91,10 @@ class Compiler(Visitor):
                 for f, v in func_nodes.items():
                     self.compile(v)
 
-    def visit_function_definition(self, node: Node) -> Any:
+    def impl_function_definition(self, node: Node) -> Any:
         self.compile(node)
 
 
 def compile_graph(g: Graph) -> Any:
-    compiler = Compiler()
+    compiler = Compiler(g)
     return g.accept(compiler)

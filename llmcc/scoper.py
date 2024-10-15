@@ -66,7 +66,6 @@ class ScopeVisitor(Visitor):
     def scope_visit(self, node, continue_down=False):
         self.scope = Scope(root=node, parent=self.scope)
         if hasattr(self, f"impl_{node.type}"):
-            log.debug(f"run impl_{node.type}")
             getattr(self, f"impl_{node.type}")(node)
         else:
             self.visit(node, continue_down=continue_down)
