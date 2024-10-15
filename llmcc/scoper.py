@@ -72,7 +72,6 @@ class ScopeVisitor(Visitor):
             self.visit(node, continue_down=continue_down)
         self.scope = self.scope.parent
 
-
     def visit_declaration(self, node: Node) -> Any:
         self.scope_visit(node, continue_down=True)
 

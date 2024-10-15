@@ -41,10 +41,10 @@ class Node(BaseModel):
     @property
     def type(self) -> str:
         return self.ts_node.type if self.ts_node else None
-    
+
     @property
     def scope_name(self) -> str:
-        return self.name.split('.')[-1]
+        return self.name.split(".")[-1]
 
     @property
     def text(self) -> str:
@@ -104,7 +104,9 @@ class Context:
 
 
 class Scope:
-    def __init__(self, root:Node =None, parent: "Scope" = None, child: "Scope" = None):
+    def __init__(
+        self, root: Node = None, parent: "Scope" = None, child: "Scope" = None
+    ):
         self.root = root
         self.nodes = {}
         self.parent = parent
@@ -113,18 +115,25 @@ class Scope:
         if root is not None and root.name is not None:
             self.define(root.scope_name, root)
 
-    def define(self, name, value):
-        log.debug(f"define {name} {value.id}")
+    def define(self, name: str, value: Node):
         self.nodes[name] = value
 
-    def resolve(self, name):
-        log.debug(f"{name}, {self.nodes}")
-        if name in self.nodes:
-            return self.nodes[name]
-        elif self.parent is not None:
-            return self.parent.resolve(name)
-        else:
+    def resolve(self, name) -> List[Node]:
+        ans = []
+        for k, v in self.nodes.items():
+            if name == k:
+                ans.append(v)
+            elif k.startswith(name + "("):
+                # Handle override functions, we want to get all override functions at the same scope level
+                ans.append(v)
+
+        if len(ans) == 0 and self.parent is not None:
+            ans = self.parent.resolve(name)
+
+        if len(ans) == 0:
             raise NameError(f"Name '{name}' is not defined in this scope.")
+
+        return ans
 
     def get_scope_chain(self) -> List["Scope"]:
         chain = [self]
@@ -153,6 +162,7 @@ class Graph(BaseModel):
 
     def accept(self, visitor: "Visitor") -> Any:
         return visitor.visit(self.root)
+
 
 _id = 0
 

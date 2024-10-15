@@ -8,6 +8,7 @@ from tree_sitter import Language, Parser
 
 import tree_sitter_cpp
 
+
 class Analyzer(ScopeVisitor):
     """Analysis the dependency for a class or function."""
 
@@ -22,12 +23,13 @@ class Analyzer(ScopeVisitor):
 
         log.debug(f"reslove symbol: {name} for {cur.name}")
         depend_nodes = self.scope.resolve(name)
-        log.debug("AAAAAAAAAA")
-        for depend_node in depend_nodes:
-            if depend_node.id == cur.id:
+        for node in depend_nodes:
+            # NOTE: given a function name, there could be multiple override version of it
+            assert isinstance(node, Node), node
+            if node.id == cur.id:
                 continue
-            log.debug(f"{cur.name}:{cur.id} depends `{depend_node.name}:{depend_node.id}'")
-            cur.depend_store.append_version({name: depend_node})
+            log.debug(f"{cur.name}:{cur.id} depends `{node.name}:{node.id}'")
+            cur.depend_store.append_version({name: node})
 
     def impl_field_data_declarator(self, node) -> Any:
         def query_custom_type(node: Node):
@@ -62,9 +64,9 @@ class Analyzer(ScopeVisitor):
         self.visit(node, continue_down=True)
 
         # if this function inside a class, it should also depends on this class
-        # if len(self.curr_node) > 0 and self.curr_node[-1].is_complex_type():
-        #     name = self.curr_node[-1].name
-        #     self.resolve_depend(node, name, allow_same_level=False)
+        parent = self.scope.parent.root
+        if parent is not None and parent.is_complex_type():
+            self.resolve_depend(parent.scope_name)
 
 
 def analyze_graph(g: Graph) -> Any:
