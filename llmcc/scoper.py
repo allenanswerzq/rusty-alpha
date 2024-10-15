@@ -63,51 +63,51 @@ class ScopeVisitor(Visitor):
             elif continue_down:
                 self.visit(child, continue_down=continue_down)
 
-    def scope_impl(self, node, continue_down=False):
+    def scope_visit(self, node, continue_down=False):
         self.scope = Scope(root=node, parent=self.scope)
         if hasattr(self, f"impl_{node.type}"):
-            # If the subclass define customized function, run it
+            log.debug(f"run impl_{node.type}")
             getattr(self, f"impl_{node.type}")(node)
         else:
             self.visit(node, continue_down=continue_down)
         self.scope = self.scope.parent
 
-    def visit_preproc_def(self, node: Node) -> Any:
-        self.scope_impl(node)
 
     def visit_declaration(self, node: Node) -> Any:
-        self.scope_impl(node, continue_down=True)
+        self.scope_visit(node, continue_down=True)
 
     def visit_namespace_definition(self, node: Node) -> Any:
-        self.scope_impl(node)
+        self.scope_visit(node)
 
     def visit_struct_specifier(self, node: Node) -> Any:
-        self.scope_impl(node)
+        self.scope_visit(node)
 
     def visit_enum_specifier(self, node: Node) -> Any:
-        self.scope_impl(node)
+        self.scope_visit(node)
 
     def visit_function_definition(self, node: Node) -> Any:
-        self.scope_impl(node)
+        self.scope_visit(node)
 
     def visit_class_specifier(self, node: Node) -> Any:
-        self.scope_impl(node)
+        self.scope_visit(node)
+
+    def visit_preproc_def(self, node: Node) -> Any:
+        pass
+        # self.scope_visit(node)
 
     def visit_preproc_ifdef(self, node: Node) -> Any:
+        pass
         # TODO: each should be in a new scope
-        self.visit(node)
+        # self.visit(node)
 
     def visit_pointer_declarator(self, node: Node) -> Any:
         self.visit(node)
 
-    def impl_field_func_declarator(self, node) -> Any:
-        pass
+    def visit_declaration_list(self, node: Node) -> Any:
+        self.visit(node)
 
-    def impl_field_class_declarator(self, node) -> Any:
-        pass
-
-    def impl_field_data_declarator(self, node) -> Any:
-        pass
+    def visit_field_declaration_list(self, node: Node) -> Any:
+        self.visit(node)
 
     def visit_field_declaration(self, node: Node) -> Any:
         if is_field_func_declarator(node):
@@ -117,8 +117,11 @@ class ScopeVisitor(Visitor):
         else:
             self.impl_field_data_declarator(node)
 
-    def visit_declaration_list(self, node: Node) -> Any:
-        self.visit(node)
+    def impl_field_func_declarator(self, node) -> Any:
+        pass
 
-    def visit_field_declaration_list(self, node: Node) -> Any:
-        self.visit(node)
+    def impl_field_class_declarator(self, node) -> Any:
+        pass
+
+    def impl_field_data_declarator(self, node) -> Any:
+        pass

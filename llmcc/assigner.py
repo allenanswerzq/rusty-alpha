@@ -47,15 +47,15 @@ class Assigner(ScopeVisitor):
 
         assert len(name), node.parent.text
         if len(param) > 0:
-            name += ".(" + param + ")"
+            name += "(" + param + ")"
         else:
-            name += ".()"
+            name += "()"
         return name
 
     def assign_name(self, name):
         # The node which a name should exist
         root = self.scope.root
-        assert root
+        assert root, name
 
         if root.name:
             self.g.node_map.pop(root.name)

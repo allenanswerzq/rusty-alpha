@@ -41,6 +41,10 @@ class Node(BaseModel):
     @property
     def type(self) -> str:
         return self.ts_node.type if self.ts_node else None
+    
+    @property
+    def scope_name(self) -> str:
+        return self.name.split('.')[-1]
 
     @property
     def text(self) -> str:
@@ -100,16 +104,21 @@ class Context:
 
 
 class Scope:
-    def __init__(self, root=None, parent: "Scope" = None, child: "Scope" = None):
+    def __init__(self, root:Node =None, parent: "Scope" = None, child: "Scope" = None):
         self.root = root
         self.nodes = {}
         self.parent = parent
         self.child = child
 
+        if root is not None and root.name is not None:
+            self.define(root.scope_name, root)
+
     def define(self, name, value):
+        log.debug(f"define {name} {value.id}")
         self.nodes[name] = value
 
     def resolve(self, name):
+        log.debug(f"{name}, {self.nodes}")
         if name in self.nodes:
             return self.nodes[name]
         elif self.parent is not None:
@@ -144,34 +153,6 @@ class Graph(BaseModel):
 
     def accept(self, visitor: "Visitor") -> Any:
         return visitor.visit(self.root)
-
-    def resolve_name(self, name: str, cur: Node, allow_same_level=True) -> List[Node]:
-        """Given a name resolve the node in the lowest scope."""
-        # log.debug(f"resolving {name} for {cur.name} in level {level}")
-        # for k, v in self.node_map.items():
-        #     print(k, v)
-
-        level = len(cur.name.split("."))
-        if cur.name.endswith(")"):  # NOTE: function
-            level -= 1
-
-        # TODO: improve this algorithm
-        resolved = []
-        for node_name, node_id in self.node_map.items():
-            parts = node_name.split(".")
-            assert len(parts) > 0
-            if parts[-1].startswith("(") and parts[-1].endswith(")"):
-                # Function sybmol, We didn't make difference with the overload functions
-                parts.pop()
-            if (
-                parts[-1] == name
-                and self.id_map[node_id].id != cur.id
-                and (len(parts) < level or (allow_same_level and len(parts) == level))
-            ):
-                # get a node in the <= level
-                resolved.append(self.id_map[node_id])
-        return resolved
-
 
 _id = 0
 
