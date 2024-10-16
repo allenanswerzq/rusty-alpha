@@ -38,10 +38,7 @@ class Writer(Visitor):
         self.file.close()
 
     def write(self, node):
-        if node.code_store is None:
-            return
-
-        log.info(f"writing {node.type} {node.name}")
+        log.info(f"writing {node.type} \n{node.text}")
         store = node.code_store.get_current_version()
         parsed = store["parsed"]
         src_node = store["src_node"]

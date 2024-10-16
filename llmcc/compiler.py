@@ -49,7 +49,7 @@ class Compiler(ScopeVisitor):
         ]
 
     def compile(self, node: Node):
-        log.info(f"compiling {node.type} {node.name}")
+        log.info(f"compiling {node.type} \n{node.text}")
         for i in range(3):
             try:
                 unparsed = self.compile_impl(node)
@@ -67,8 +67,10 @@ class Compiler(ScopeVisitor):
                 continue
             else:
                 break
+
         if node.code_store is None:
             node.code_store = Store()
+
         assert parsed
         parsed = parse(parsed.target_code, lan=Language(tree_sitter_rust.language()))
         node.code_store.add_version({"parsed": parsed, "src_node": node})
@@ -84,12 +86,16 @@ class Compiler(ScopeVisitor):
             slice = node.slice_store.get_current_version()
             data_node = slice["data"]
             func_nodes = slice["func"]
+            nest_classes = slice["nest_classes"]
             assert data_node or func_nodes
             if data_node:
                 self.compile(data_node)
             if func_nodes:
                 for f, v in func_nodes.items():
                     self.compile(v)
+            if nest_classes:
+                for nest in nest_classes:
+                    self.impl_class_specifier(nest)
 
     def impl_function_definition(self, node: Node) -> Any:
         self.compile(node)

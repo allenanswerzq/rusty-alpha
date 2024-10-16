@@ -92,6 +92,9 @@ class Assigner(ScopeVisitor):
     def visit_field_identifier(self, node: Node) -> Any:
         pass
 
+    def impl_field_class_declarator(self, node) -> Any:
+        self.visit(node)
+
 
 def assign_name_graph(g: Graph):
     assigner = Assigner(g)

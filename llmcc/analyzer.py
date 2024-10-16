@@ -49,6 +49,9 @@ class Analyzer(ScopeVisitor):
             log.debug(f"reslove data field type: {ty}")
             self.resolve_depend(ty)
 
+    def impl_type_identifier(self, node: Node) -> Any:
+        print("CCCCCCCCCCCCC", node.text)
+
     def impl_call_expression(self, node: Node) -> Any:
         call = node.text.split("(")[0]
         log.debug(f"reslove function call: {call}")

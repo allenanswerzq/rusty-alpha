@@ -44,7 +44,8 @@ class Slicer(ScopeVisitor):
         data_fields = self.data_fields.copy()
         func_definitions = self.func_definitions.copy()
         for nest in nested_class:
-            self.impl_class_specifier(nest)
+            # TODO: move the scope up one level
+            self.scope_visit(nest)
 
         data = collect_class_data(self.scope, data_fields)
         func = collect_class_func(self.scope, func_definitions)
@@ -59,7 +60,7 @@ class Slicer(ScopeVisitor):
             node.slice_store = Store()
         if data or func:
             node.slice_store.add_version(
-                {"data": data, "func": func, "nest_classes": self.nested_classes}
+                {"data": data, "func": func, "nest_classes": nested_class}
             )
 
 
@@ -87,8 +88,6 @@ def collect_class_data(scope: Scope, fields) -> Node:
 
 
 def collect_class_func(scope, funcs) -> Dict[str, Node]:
-    if len(funcs) == 0:
-        return None
     func_text = {}
     class_name = scope.root.name
     for f in funcs:
