@@ -38,34 +38,31 @@ class Slicer(ScopeVisitor):
             self.func_definitions = []
             self.nested_classes = []
 
-            # for child in node.children:
-            #     self.visit(child)
+            self.visit(node)
 
             nested_class = self.nested_classes.copy()
             data_fields = self.data_fields.copy()
             func_definitions = self.func_definitions.copy()
             for nest in nested_class:
-                pass
-                # TODO: move the scope up one level
-                # self.visit(nest)
+                # NOTE: move the scope up one level
+                self.visit_class_specifier(nest)
 
-            # data = collect_class_data(self.scope, data_fields)
-            # func = collect_class_func(self.scope, func_definitions)
+            data = collect_class_data(self.scope, data_fields)
+            func = collect_class_func(self.scope, func_definitions)
 
-            # if data:
-            #     log.debug("\n" + data.text)
-            # if func:
-            #     for k, v in func.items():
-            #         log.debug("\n" + v.text)
+            if data:
+                log.debug("\n" + data.text)
+            if func:
+                for k, v in func.items():
+                    log.debug("\n" + v.text)
 
-            # if node.slice_store is None:
-            #     node.slice_store = Store()
-            # if data or func:
-            #     node.slice_store.add_version(
-            #         {"data": data, "func": func, "nest_classes": nested_class}
-            #     )
-        log.debug(f"scope visit struct {node.text}")
-        self.scope_visit(node)
+            if node.slice_store is None:
+                node.slice_store = Store()
+            if data or func:
+                node.slice_store.add_version(
+                    {"data": data, "func": func, "nest_classes": nested_class}
+                )
+        self.scope_visit(node, func=func)
 
 
 def slice_graph(g: Graph) -> Any:

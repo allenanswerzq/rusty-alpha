@@ -93,7 +93,7 @@ class ScopeVisitor(Visitor):
             self.scope_visit(node, continue_down=True)
 
     def visit_namespace_definition(self, node: Node) -> Any:
-        log.debug(f"scope visit namespace {node.text}")
+        log.debug(f"scope visit namespace {node.name}")
         self.scope_visit(node)
 
     def visit_struct_specifier(self, node: Node) -> Any:

@@ -90,8 +90,7 @@ class Assigner(ScopeVisitor):
         self.assign_name(node.text)
 
     def visit_field_class_declarator(self, node) -> Any:
-        pass
-        # self.scope_visit(node)
+        self.visit(node)
 
 
 def assign_name_graph(g: Graph):
