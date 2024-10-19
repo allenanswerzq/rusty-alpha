@@ -75,13 +75,13 @@ class Compiler(ScopeVisitor):
         parsed = parse(parsed.target_code, lan=Language(tree_sitter_rust.language()))
         node.code_store.add_version({"parsed": parsed, "src_node": node})
 
-    def impl_struct_specifier(self, node: Node) -> Any:
-        self.impl_class_specifier(node)
+    def visit_struct_specifier(self, node: Node) -> Any:
+        self.visit_class_specifier(node)
 
-    def impl_declaration(self, node: Node) -> Any:
+    def visit_declaration(self, node: Node) -> Any:
         self.compile(node)
 
-    def impl_class_specifier(self, node: Node) -> Any:
+    def visit_class_specifier(self, node: Node) -> Any:
         if node.slice_store:
             slice = node.slice_store.get_current_version()
             data_node = slice["data"]
@@ -95,9 +95,9 @@ class Compiler(ScopeVisitor):
                     self.compile(v)
             if nest_classes:
                 for nest in nest_classes:
-                    self.impl_class_specifier(nest)
+                    self.visit_class_specifier(nest)
 
-    def impl_function_definition(self, node: Node) -> Any:
+    def visit_function_definition(self, node: Node) -> Any:
         self.compile(node)
 
 

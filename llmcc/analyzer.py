@@ -31,7 +31,7 @@ class Analyzer(ScopeVisitor):
             log.debug(f"{cur.name}:{cur.id} depends `{node.name}:{node.id}'")
             cur.depend_store.append_version({name: node})
 
-    def impl_field_data_declarator(self, node) -> Any:
+    def visit_field_data_declarator(self, node) -> Any:
         def query_custom_type(node: Node):
             CPP_LANGUAGE = Language(tree_sitter_cpp.language())
             query = CPP_LANGUAGE.query(
@@ -49,22 +49,17 @@ class Analyzer(ScopeVisitor):
             log.debug(f"reslove data field type: {ty}")
             self.resolve_depend(ty)
 
-    def impl_type_identifier(self, node: Node) -> Any:
-        print("CCCCCCCCCCCCC", node.text)
+    def visit_type_identifier(self, node: Node) -> Any:
+        log.debug(f"reslove type identifier: {node.text}")
+        self.resolve_depend(node.text)
 
-    def impl_call_expression(self, node: Node) -> Any:
+    def visit_call_expression(self, node: Node) -> Any:
         call = node.text.split("(")[0]
         log.debug(f"reslove function call: {call}")
         self.resolve_depend(call)
 
-    def impl_struct_specifier(self, node: Node) -> Any:
-        self.visit(node)
-
-    def impl_class_specifier(self, node: Node) -> Any:
-        self.visit(node)
-
-    def impl_function_definition(self, node: Node) -> Any:
-        self.visit(node, continue_down=True)
+    def visit_function_definition(self, node: Node) -> Any:
+        self.scope_visit(node, continue_down=True)
 
         # if this function inside a class, it should also depends on this class
         parent = self.scope.parent.root
@@ -73,5 +68,6 @@ class Analyzer(ScopeVisitor):
 
 
 def analyze_graph(g: Graph) -> Any:
+    log.info("analyzing the graph")
     analyzer = Analyzer(g)
     analyzer.visit(g.root)

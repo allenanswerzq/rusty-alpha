@@ -114,7 +114,7 @@ class Scope:
         self, root: Node = None, parent: "Scope" = None, child: "Scope" = None
     ):
         self.root = root
-        self.nodes = {}
+        self.nodes: Dict[str, Node] = {}
         self.parent = parent
         self.child = child
 
@@ -132,14 +132,13 @@ class Scope:
             elif k.startswith(name + "("):
                 # Handle override functions, we want to get all override functions at the same scope level
                 ans.append(v)
-
-        if len(ans) == 0 and self.parent is not None:
-            ans = self.parent.resolve(name)
-
-        if len(ans) == 0:
-            raise NameError(f"Name '{name}' is not defined in this scope.")
-
-        return ans
+        
+        if len(ans) > 0:
+            return ans
+        elif self.parent is not None:
+            return self.parent.resolve(name)
+        else:
+            raise NameError(f"Symbol '{name}' is not defined.")
 
     def get_scope_chain(self) -> List["Scope"]:
         chain = [self]

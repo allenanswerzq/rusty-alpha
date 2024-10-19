@@ -18,53 +18,58 @@ class Slicer(ScopeVisitor):
         self.func_definitions = []
         self.nested_classes = []
 
-    def impl_struct_specifier(self, node: Node) -> Any:
-        self.impl_class_specifier(node)
-
-    def impl_function_definition(self, node: Node) -> Any:
+    def visit_function_definition(self, node: Node) -> Any:
         self.func_definitions.append(node)
 
-    def impl_field_class_declarator(self, node) -> Any:
+    def visit_field_class_declarator(self, node) -> Any:
         assert node.children[0].is_complex_type()
         nest = node.children[0]
         self.nested_classes.append(nest)
 
-    def impl_field_data_declarator(self, node) -> Any:
+    def visit_field_data_declarator(self, node) -> Any:
         self.data_fields.append(node)
 
-    def impl_class_specifier(self, node: Node) -> Any:
-        self.data_fields = []
-        self.func_definitions = []
-        self.nested_classes = []
+    def visit_struct_specifier(self, node: Node) -> Any:
+        self.visit_class_specifier(node)
 
-        for child in node.children:
-            self.visit(child)
+    def visit_class_specifier(self, node: Node) -> Any:
+        def func(node: Node, continue_down=False):
+            self.data_fields = []
+            self.func_definitions = []
+            self.nested_classes = []
 
-        nested_class = self.nested_classes.copy()
-        data_fields = self.data_fields.copy()
-        func_definitions = self.func_definitions.copy()
-        for nest in nested_class:
-            # TODO: move the scope up one level
-            self.scope_visit(nest)
+            # for child in node.children:
+            #     self.visit(child)
 
-        data = collect_class_data(self.scope, data_fields)
-        func = collect_class_func(self.scope, func_definitions)
+            nested_class = self.nested_classes.copy()
+            data_fields = self.data_fields.copy()
+            func_definitions = self.func_definitions.copy()
+            for nest in nested_class:
+                pass
+                # TODO: move the scope up one level
+                # self.visit(nest)
 
-        if data:
-            log.debug("\n" + data.text)
-        if func:
-            for k, v in func.items():
-                log.debug("\n" + v.text)
+            # data = collect_class_data(self.scope, data_fields)
+            # func = collect_class_func(self.scope, func_definitions)
 
-        if node.slice_store is None:
-            node.slice_store = Store()
-        if data or func:
-            node.slice_store.add_version(
-                {"data": data, "func": func, "nest_classes": nested_class}
-            )
+            # if data:
+            #     log.debug("\n" + data.text)
+            # if func:
+            #     for k, v in func.items():
+            #         log.debug("\n" + v.text)
+
+            # if node.slice_store is None:
+            #     node.slice_store = Store()
+            # if data or func:
+            #     node.slice_store.add_version(
+            #         {"data": data, "func": func, "nest_classes": nested_class}
+            #     )
+        log.debug(f"scope visit struct {node.text}")
+        self.scope_visit(node)
 
 
 def slice_graph(g: Graph) -> Any:
+    log.info("slicing the graph")
     slicer = Slicer(g)
     slicer.visit(g.root)
 

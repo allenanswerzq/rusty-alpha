@@ -8,7 +8,7 @@ from llmcc.scoper import ScopeVisitor
 class Assigner(ScopeVisitor):
 
     def __init__(self, g: Graph):
-        super().__init__(g)
+        super().__init__(g, enforce_scope_name=False)
 
     def query_identifier(self, node: Node):
         query = Language(tree_sitter_cpp.language()).query(
@@ -89,11 +89,9 @@ class Assigner(ScopeVisitor):
     def visit_identifier(self, node: Node) -> Any:
         self.assign_name(node.text)
 
-    def visit_field_identifier(self, node: Node) -> Any:
+    def visit_field_class_declarator(self, node) -> Any:
         pass
-
-    def impl_field_class_declarator(self, node) -> Any:
-        self.visit(node)
+        # self.scope_visit(node)
 
 
 def assign_name_graph(g: Graph):
