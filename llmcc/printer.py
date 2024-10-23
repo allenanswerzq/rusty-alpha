@@ -46,11 +46,15 @@ class Writer(Visitor):
             if src_node.depend_store.current_version > 0:
                 depends = src_node.depend_store.get_current_version()
                 for k, v in depends.items():
+                    if v.slice_store is not None:
+                        assert isinstance(v, Node)
+                        v = v.slice_store.get_current_version()["data"]
                     self.file.write(f"//+[Depends] {node.name} -> {v.name}")
                     self.file.write("\n")
                     self.file.write("//+" + v.text.replace("\n", "\n//+"))
                     self.file.write("\n")
                     self.file.write("//+-------------------------------------------\n")
+
         self.file.write("//|" + src_node.text.replace("\n", "\n//|"))
         self.file.write("\n")
         self.file.write(parsed.root.text)

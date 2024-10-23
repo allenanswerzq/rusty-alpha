@@ -51,8 +51,8 @@ class Slicer(ScopeVisitor):
                 self.scope = scope
 
             chain = self.scope.get_scope_chain()
-            data = collect_class_data(chain, data_fields)
-            func = collect_class_func(chain, func_definitions)
+            data = collect_class_data(node, chain, data_fields)
+            func = collect_class_func(node, chain, func_definitions)
 
             if data:
                 log.debug("\n" + data.text)
@@ -76,7 +76,7 @@ def slice_graph(g: Graph) -> Any:
     slicer.visit(g.root)
 
 
-def collect_class_data(chain, fields) -> Node:
+def collect_class_data(node: Node, chain, fields) -> Node:
     text = ""
     indent = 0
     for sc in chain:
@@ -90,10 +90,12 @@ def collect_class_data(chain, fields) -> Node:
         indent -= 4
         text += " " * indent + "}\n"
     assert indent == 0
-    return parse(text).root
+    root = parse(text).root
+    root.depend_store = node.depend_store
+    return root
 
 
-def collect_class_func(chain, funcs) -> Dict[str, Node]:
+def collect_class_func(node: Node, chain, funcs) -> Dict[str, Node]:
     func_text = {}
     class_name = ""
     for i, sc in enumerate(chain):
@@ -111,6 +113,7 @@ def collect_class_func(chain, funcs) -> Dict[str, Node]:
         {type} {class_name.replace('.', '::')}::{para} {stmt.rstrip()}
         """
         node = parse(text).root
+        node.depend_store = f.depend_store
         node.name = f"{class_name}.{para}"
         for j in range(0, 100):
             # TOOD: use paramter type to unique the override function

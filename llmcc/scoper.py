@@ -84,8 +84,6 @@ class ScopeVisitor(Visitor):
     def visit_declaration(self, node: Node) -> Any:
         root = self.scope.root
         if root.is_complex_type() or root.is_function():
-            # local declaration
-            # self.visit(node, continue_down=True)
             pass
         else:
             # global declaration
@@ -96,10 +94,6 @@ class ScopeVisitor(Visitor):
         log.debug(f"scope visit namespace {node.name}")
         self.scope_visit(node)
 
-    def visit_struct_specifier(self, node: Node) -> Any:
-        log.debug("scope visit struct")
-        self.scope_visit(node)
-
     def visit_enum_specifier(self, node: Node) -> Any:
         log.debug("scope visit enum")
         self.scope_visit(node)
@@ -107,6 +101,10 @@ class ScopeVisitor(Visitor):
     def visit_function_definition(self, node: Node) -> Any:
         log.debug("scope visit function definition")
         self.scope_visit(node)
+
+    def visit_struct_specifier(self, node: Node) -> Any:
+        log.debug("scope visit struct")
+        self.visit_class_specifier(node)
 
     def visit_class_specifier(self, node: Node) -> Any:
         log.debug("scope visit class")
