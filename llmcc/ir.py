@@ -1,3 +1,4 @@
+import copy
 import re
 import tree_sitter_cpp
 
@@ -132,7 +133,7 @@ class Scope:
             elif k.startswith(name + "("):
                 # Handle override functions, we want to get all override functions at the same scope level
                 ans.append(v)
-        
+
         if len(ans) > 0:
             return ans
         elif self.parent is not None:
@@ -148,6 +149,23 @@ class Scope:
             chain.append(start)
         chain.pop()
         return chain[::-1]
+
+    # def __deepcopy__(self, memo):
+    #     # Create a new Scope instance
+    #     new_copy = Scope()
+
+    #     # Copy the root node if it exists
+    #     new_copy.root = copy.deepcopy(self.root, memo)
+
+    #     # Deepcopy the nodes dictionary
+    #     new_copy.nodes = copy.deepcopy(self.nodes, memo)
+
+    #     # Handle parent and child attributes
+    #     new_copy.parent = copy.deepcopy(self.parent, memo) if self.parent else None
+    #     new_copy.child = copy.deepcopy(self.child, memo) if self.child else None
+
+    #     # Return the new deepcopy instance
+    #     return new_copy
 
 
 class Graph(BaseModel):

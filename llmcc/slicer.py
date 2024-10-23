@@ -1,4 +1,4 @@
-import tree_sitter_cpp
+import copy
 
 from tree_sitter import Language, Parser
 from tree_sitter import Node as TsNode
@@ -43,12 +43,16 @@ class Slicer(ScopeVisitor):
             nested_class = self.nested_classes.copy()
             data_fields = self.data_fields.copy()
             func_definitions = self.func_definitions.copy()
+            scope = self.scope
             for nest in nested_class:
                 # NOTE: move the scope up one level
+                self.scope = scope.parent
                 self.visit_class_specifier(nest)
+                self.scope = scope
 
-            data = collect_class_data(self.scope, data_fields)
-            func = collect_class_func(self.scope, func_definitions)
+            chain = self.scope.get_scope_chain()
+            data = collect_class_data(chain, data_fields)
+            func = collect_class_func(chain, func_definitions)
 
             if data:
                 log.debug("\n" + data.text)
@@ -62,6 +66,7 @@ class Slicer(ScopeVisitor):
                 node.slice_store.add_version(
                     {"data": data, "func": func, "nest_classes": nested_class}
                 )
+
         self.scope_visit(node, func=func)
 
 
@@ -71,8 +76,7 @@ def slice_graph(g: Graph) -> Any:
     slicer.visit(g.root)
 
 
-def collect_class_data(scope: Scope, fields) -> Node:
-    chain = scope.get_scope_chain()
+def collect_class_data(chain, fields) -> Node:
     text = ""
     indent = 0
     for sc in chain:
@@ -89,9 +93,14 @@ def collect_class_data(scope: Scope, fields) -> Node:
     return parse(text).root
 
 
-def collect_class_func(scope, funcs) -> Dict[str, Node]:
+def collect_class_func(chain, funcs) -> Dict[str, Node]:
     func_text = {}
-    class_name = scope.root.name
+    class_name = ""
+    for i, sc in enumerate(chain):
+        name = sc.root.name.split(".")[-1]
+        if i > 0:
+            class_name += "::"
+        class_name += name
     for f in funcs:
         type = Node(ts_node=f.child_by_field_name("type")).text
         d = f.child_by_field_name("declarator")
